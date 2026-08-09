@@ -1,0 +1,136 @@
+// Values-Mirror data model.
+//
+// Design note: every field that holds a user's actual values/beliefs/decisions
+// (title, body, reflection text) is stored ENCRYPTED at the application layer
+// via src/lib/crypto.ts (AES-256-GCM). The database only ever sees ciphertext,
+// so a DB dump alone does not expose anyone's beliefs. See DESIGN principle
+// "Sensitive data by default."
+//
+// Dev uses SQLite for zero-setup local runs. To move to Postgres (per the build
+// plan), change `provider` to "postgresql" and point DATABASE_URL at your
+// Postgres instance — no model changes required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  values        Value[]
+  decisions     Decision[]
+  reflections   Reflection[]
+  consultations Consultation[]
+}
+
+// Failed sign-in attempts, used to throttle brute-force guessing.
+//
+// Keyed by (email, ip) rather than email alone. Throttling on email alone would
+// hand an attacker a denial-of-service: burn ten wrong guesses and the real
+// owner is locked out too. Scoping to the source address means an abusive
+// client throttles only itself. Cleared on a successful sign-in.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String   @default("unknown")
+  createdAt DateTime @default(now())
+
+  @@index([email, ip, createdAt])
+}
+
+// A stated core value/belief. `title` and `body` are ciphertext and always hold
+// the CURRENT wording; every wording this value has ever had is kept in
+// ValueVersion so the user can see how their own values shifted over time.
+model Value {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  versions  ValueVersion[]
+  decisions DecisionValue[]
+
+  @@index([userId])
+}
+
+// Append-only history of a value's wording. One row is written when the value
+// is first stated and one on every subsequent edit, so "what I believed then"
+// is never overwritten by "what I believe now" — drift over time is the point
+// of the product, not an accident to be discarded.
+model ValueVersion {
+  id        String   @id @default(cuid())
+  valueId   String
+  value     Value    @relation(fields: [valueId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([valueId])
+  @@index([userId])
+}
+
+// A real decision/action the user took, with the time it happened. `body` is ciphertext.
+model Decision {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body       String
+  occurredAt DateTime
+  createdAt  DateTime        @default(now())
+  values     DecisionValue[]
+
+  @@index([userId])
+}
+
+// Which stated values a decision bears on, as judged by the user themselves.
+// This is deliberately user-declared rather than AI-inferred: the person is the
+// authority on what their own decision was about. It makes alignment and
+// tension concrete instead of guessed at.
+model DecisionValue {
+  decisionId String
+  decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  valueId    String
+  value      Value    @relation(fields: [valueId], references: [id], onDelete: Cascade)
+  userId     String
+
+  @@id([decisionId, valueId])
+  @@index([valueId])
+  @@index([userId])
+}
+
+// A "what should I do?" decision-aid query and its response. The tool lays out
+// how the user's stated values bear on the situation — options and tensions,
+// never a verdict. `question` and `body` are ciphertext.
+model Consultation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question  String
+  body      String
+  model     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// A stored AI reflection over the user's values + decisions. `body` is ciphertext.
+model Reflection {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  model     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

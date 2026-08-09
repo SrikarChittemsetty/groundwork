@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env — NEVER commit secrets or the local database
+.env
+.env*.local
+
+# local sqlite database (contains sensitive personal data)
+/prisma/*.db
+/prisma/*.db-journal
+
+# prisma generated client
+/prisma/generated
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
