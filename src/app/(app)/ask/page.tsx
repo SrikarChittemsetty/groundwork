@@ -75,7 +75,9 @@ export default function AskPage() {
           onChange={(e) => setQuestion(e.target.value)}
           maxLength={4000}
         />
-        {error && <div className="error">{error}</div>}
+        <div aria-live="polite">
+          {error && <div className="error">{error}</div>}
+        </div>
         <div className="row" style={{ marginTop: 18 }}>
           <button type="submit" disabled={busy}>
             {busy ? "Thinking…" : "Reason it through"}
@@ -107,7 +109,7 @@ export default function AskPage() {
         </div>
       ) : (
         consultations.map((c) => (
-          <div key={c.id} className="card interactive">
+          <article key={c.id} className="card interactive">
             <div className="asked">{c.question}</div>
             <div
               className="reflection"
@@ -121,7 +123,7 @@ export default function AskPage() {
                 Delete
               </button>
             </div>
-          </div>
+          </article>
         ))
       )}
     </>

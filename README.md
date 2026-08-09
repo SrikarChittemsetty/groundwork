@@ -70,7 +70,12 @@ AI-assisted reflection on where they line up and where they don't.
   distinguishes "Value stated" from "Value revised"
 - Decision/action log with timestamps (encrypted), with inline editing
 - AI reflection over your values + decisions (Claude) — observations and
-  questions, never verdicts
+  questions, never verdicts. Can be scoped to a single value or a recent
+  window; when scoped, the prompt is told so, since a filtered gap isn't the
+  same as a gap in your life
+- Timeline filtering (everything / values only / decisions only) — the counts
+  always describe the whole record, so narrowing the view never looks like
+  history shrinking
 - "What should I do?" decision aid (`/ask`) — practical-syllogism-style
   guidance that lays out how your own values bear on a new situation and what
   your history suggests; paths and costs, never a recommendation

@@ -89,17 +89,29 @@ export function buildUserMessage(
 
 export async function generateReflection(
   values: ValueInput[],
-  decisions: DecisionInput[]
+  decisions: DecisionInput[],
+  scope?: string
 ): Promise<{ text: string; model: string }> {
   if (AI_MOCK_MODE) {
     return { text: mockReflection(values, decisions), model: MOCK_MODEL_LABEL };
   }
+
+  // When the reflection is narrowed, say so explicitly — otherwise the model
+  // may read a filtered slice as the user's whole history and draw conclusions
+  // from an absence that isn't real.
+  const scoped =
+    scope && scope !== "Everything"
+      ? `\n\nNote: I have narrowed this reflection to "${scope}". What follows is only part of my record, so don't treat anything missing here as absent from my life generally.`
+      : "";
+
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: REFLECTION_MODEL,
     max_tokens: 1200,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserMessage(values, decisions) }],
+    messages: [
+      { role: "user", content: buildUserMessage(values, decisions) + scoped },
+    ],
   });
 
   return { text: extractText(response), model: REFLECTION_MODEL };

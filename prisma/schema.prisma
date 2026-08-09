@@ -124,12 +124,18 @@ model Consultation {
 }
 
 // A stored AI reflection over the user's values + decisions. `body` is ciphertext.
+//
+// `scope` records what the reflection actually looked at ("Everything",
+// "The last 90 days", or a specific value's title). It is ciphertext like
+// everything else — a scope naming a value would otherwise leak that value's
+// wording in plaintext.
 model Reflection {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   body      String
   model     String
+  scope     String   @default("Everything")
   createdAt DateTime @default(now())
 
   @@index([userId])

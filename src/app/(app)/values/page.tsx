@@ -138,7 +138,9 @@ export default function ValuesPage() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
         />
-        {error && <div className="error">{error}</div>}
+        <div aria-live="polite">
+          {error && <div className="error">{error}</div>}
+        </div>
         <div style={{ marginTop: 18 }}>
           <button type="submit" disabled={busy}>
             {busy ? "Saving…" : "Add value"}
@@ -191,7 +193,7 @@ export default function ValuesPage() {
               </div>
             </div>
           ) : (
-            <div key={v.id} className="card interactive">
+            <article key={v.id} className="card interactive">
               <div className="title">{v.title}</div>
               <div className="body-text">{v.body}</div>
               <div className="card-actions">
@@ -232,7 +234,7 @@ export default function ValuesPage() {
                   )}
                 </div>
               )}
-            </div>
+            </article>
           )
         )
       )}

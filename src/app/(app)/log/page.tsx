@@ -190,7 +190,9 @@ export default function LogPage() {
             </p>
           </>
         )}
-        {error && <div className="error">{error}</div>}
+        <div aria-live="polite">
+          {error && <div className="error">{error}</div>}
+        </div>
         <div style={{ marginTop: 18 }}>
           <button type="submit" disabled={busy}>
             {busy ? "Saving…" : "Log it"}
@@ -268,7 +270,7 @@ export default function LogPage() {
               </div>
             </div>
           ) : (
-            <div key={d.id} className="card interactive">
+            <article key={d.id} className="card interactive">
               <div className="body-text">{d.body}</div>
               {d.valueIds && d.valueIds.length > 0 && (
                 <div className="chips" style={{ marginTop: 12 }}>
@@ -290,7 +292,7 @@ export default function LogPage() {
                   </button>
                 </span>
               </div>
-            </div>
+            </article>
           )
         )
       )}

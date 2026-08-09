@@ -181,6 +181,7 @@ a:hover {
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 500;
+  white-space: nowrap;
   transition: color var(--fast) var(--ease),
     background var(--fast) var(--ease);
 }
@@ -450,6 +451,11 @@ button.link:hover:not(:disabled) {
   align-items: center;
 }
 
+/* Selectors are qualified with `button` so they outrank the generic
+   `button:hover` rule above — without that, hovering a selected chip repaints
+   it with the solid accent fill while the text stays accent-coloured, leaving
+   it unreadable. */
+button.chip,
 .chip {
   background: var(--surface-sunken);
   border: 1px solid var(--border);
@@ -462,15 +468,21 @@ button.link:hover:not(:disabled) {
   cursor: pointer;
   transition: all var(--fast) var(--ease);
 }
-.chip:hover {
+button.chip:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--accent-line);
   background: var(--surface-hover);
 }
+button.chip.on,
 .chip.on {
   background: var(--accent-dim);
   border-color: var(--accent-line);
   color: var(--accent);
+}
+button.chip.on:hover:not(:disabled) {
+  background: rgba(142, 162, 255, 0.22);
+  border-color: var(--accent);
+  color: var(--accent-hover);
 }
 .chip.static {
   cursor: default;
@@ -479,10 +491,6 @@ button.link:hover:not(:disabled) {
   background: var(--accent-dim);
   border-color: transparent;
   color: var(--accent);
-}
-.chip.static:hover {
-  background: var(--accent-dim);
-  border-color: transparent;
 }
 
 /* --------------------------------------------------------------------------

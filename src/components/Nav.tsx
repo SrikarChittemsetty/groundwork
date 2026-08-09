@@ -23,15 +23,16 @@ export default function Nav() {
   }
 
   return (
-    <div className="topbar-wrap">
+    <header className="topbar-wrap">
       <div className="topbar">
         <span className="brand">Values Mirror</span>
-        <nav className="nav">
+        <nav className="nav" aria-label="Main">
           {LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
               className={pathname === l.href ? "active" : ""}
+              aria-current={pathname === l.href ? "page" : undefined}
             >
               {l.label}
             </Link>
@@ -42,6 +43,6 @@ export default function Nav() {
           Sign out
         </button>
       </div>
-    </div>
+    </header>
   );
 }

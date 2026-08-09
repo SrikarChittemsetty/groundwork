@@ -40,9 +40,12 @@ function groupByMonth(items: Item[]): { month: string; items: Item[] }[] {
   return groups;
 }
 
+type Filter = "all" | "values" | "decisions";
+
 export default function TimelinePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
     (async () => {
@@ -55,13 +58,23 @@ export default function TimelinePage() {
     })();
   }, []);
 
+  // Counts describe the whole record, not the current filter — otherwise
+  // narrowing the view would look like the history itself had shrunk.
   const valuesStated = new Set(
     items.filter((i) => i.kind === "value" && !i.revised).map((i) => i.id)
   ).size;
   const revisions = items.filter((i) => i.kind === "value" && i.revised).length;
   const decisions = items.filter((i) => i.kind === "decision").length;
 
-  const groups = groupByMonth(items);
+  const visible = items.filter((i) =>
+    filter === "all"
+      ? true
+      : filter === "values"
+        ? i.kind === "value"
+        : i.kind === "decision"
+  );
+
+  const groups = groupByMonth(visible);
 
   return (
     <>
@@ -115,6 +128,39 @@ export default function TimelinePage() {
             </div>
           </div>
 
+          <div
+            className="chips"
+            role="group"
+            aria-label="Filter timeline"
+            style={{ marginBottom: 22 }}
+          >
+            {(
+              [
+                ["all", "Everything"],
+                ["values", "Values only"],
+                ["decisions", "Decisions only"],
+              ] as [Filter, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`chip${filter === key ? " on" : ""}`}
+                aria-pressed={filter === key}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {visible.length === 0 ? (
+            <div className="empty">
+              <p className="notice">
+                Nothing of that kind yet — your record still holds{" "}
+                {items.length} {items.length === 1 ? "entry" : "entries"}.
+              </p>
+            </div>
+          ) : (
           <div className="timeline">
             {groups.map((group) => (
               <div key={group.month}>
@@ -181,6 +227,7 @@ export default function TimelinePage() {
               </div>
             ))}
           </div>
+          )}
         </>
       )}
     </>
