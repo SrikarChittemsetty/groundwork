@@ -4,6 +4,7 @@ import { getUserId } from "@/lib/auth";
 import { encrypt, safeDecrypt } from "@/lib/crypto";
 import { generateReflection } from "@/lib/anthropic";
 import { checkAiRateLimit } from "@/lib/rateLimit";
+import { describeAiError } from "@/lib/aiErrors";
 
 // GET: list previously generated reflections (newest first).
 export async function GET() {
@@ -112,10 +113,11 @@ export async function POST(req: Request) {
   try {
     result = await generateReflection(values, decisions, scopeLabel);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to generate reflection.";
-    const status = message.includes("ANTHROPIC_API_KEY") ? 500 : 502;
-    return NextResponse.json({ error: message }, { status });
+    const failure = describeAiError(err, "generate a reflection");
+    return NextResponse.json(
+      { error: failure.message },
+      { status: failure.status }
+    );
   }
 
   const created = await prisma.reflection.create({

@@ -15,7 +15,17 @@ export function getAnthropic(): Anthropic {
 }
 
 export const REFLECTION_MODEL =
-  process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  process.env.ANTHROPIC_MODEL || "claude-opus-5";
+
+// Thinking is on by default on current models, and max_tokens caps thinking
+// AND response text together. A tight budget sized for just the prose would
+// be consumed by thinking and truncate the reflection mid-sentence.
+const MAX_TOKENS = 16000;
+
+// Effort controls reasoning depth and therefore spend. "medium" is the
+// cost/quality balance that suits a reflection: this is a personal tool on a
+// modest budget, not an agentic coding loop.
+const EFFORT = "medium";
 
 // Dev-only mock mode: when running outside production with no API key set,
 // the AI endpoints return clearly-labeled canned output so the full product
@@ -107,7 +117,8 @@ export async function generateReflection(
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: REFLECTION_MODEL,
-    max_tokens: 1200,
+    max_tokens: MAX_TOKENS,
+    output_config: { effort: EFFORT },
     system: SYSTEM_PROMPT,
     messages: [
       { role: "user", content: buildUserMessage(values, decisions) + scoped },
@@ -154,7 +165,8 @@ export async function generateGuidance(
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: REFLECTION_MODEL,
-    max_tokens: 1400,
+    max_tokens: MAX_TOKENS,
+    output_config: { effort: EFFORT },
     system: GUIDANCE_SYSTEM_PROMPT,
     messages: [
       {
@@ -168,6 +180,15 @@ export async function generateGuidance(
 }
 
 function extractText(response: Anthropic.Message): string {
+  // A safety classifier can decline a request: HTTP 200, stop_reason
+  // "refusal", and content that is empty or partial. Reading content[0]
+  // unconditionally would surface an empty reflection as if it were real.
+  if (response.stop_reason === "refusal") {
+    throw new Error(
+      "The model declined to respond to this content. Nothing was saved."
+    );
+  }
+
   return response.content
     .filter((block): block is Anthropic.TextBlock => block.type === "text")
     .map((block) => block.text)

@@ -4,6 +4,7 @@ import { getUserId } from "@/lib/auth";
 import { encrypt, safeDecrypt } from "@/lib/crypto";
 import { generateGuidance } from "@/lib/anthropic";
 import { checkAiRateLimit } from "@/lib/rateLimit";
+import { describeAiError } from "@/lib/aiErrors";
 
 // GET: list past consultations (newest first).
 export async function GET() {
@@ -89,10 +90,11 @@ export async function POST(req: Request) {
   try {
     result = await generateGuidance(values, decisions, question.trim());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to generate guidance.";
-    const status = message.includes("ANTHROPIC_API_KEY") ? 500 : 502;
-    return NextResponse.json({ error: message }, { status });
+    const failure = describeAiError(err, "reason this through");
+    return NextResponse.json(
+      { error: failure.message },
+      { status: failure.status }
+    );
   }
 
   const created = await prisma.consultation.create({

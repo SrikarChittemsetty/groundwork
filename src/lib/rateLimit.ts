@@ -8,8 +8,12 @@ import { prisma } from "@/lib/db";
 // in-memory state, so limits survive restarts and work across serverless
 // instances. Both features share one pool because both cost money.
 
+// Defaults are sized against the build plan's $50-150/month runtime budget.
+// A reflection runs on Claude Opus 5 with thinking on, so a single request is
+// roughly $0.10 of inference. 40/day worst case is about $120/month — inside
+// the budget. Raise these only if you've checked what it costs you.
 const PER_HOUR = Number(process.env.AI_LIMIT_PER_HOUR ?? 15);
-const PER_DAY = Number(process.env.AI_LIMIT_PER_DAY ?? 60);
+const PER_DAY = Number(process.env.AI_LIMIT_PER_DAY ?? 40);
 
 export type RateLimitResult =
   | { ok: true }
