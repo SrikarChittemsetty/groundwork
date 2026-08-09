@@ -123,7 +123,13 @@ datasource db {
 ```
 
 Point `DATABASE_URL` at your Postgres instance and run `npm run db:push`. No
-model changes required. Encryption, auth, and app logic are unchanged.
+model changes required.
+
+This has been verified against a real Postgres 16 instance, not just assumed:
+schema push, seeding, versioned edits inside transactions, cascade deletes,
+the AI request path, and encryption at rest all behaved identically to SQLite.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the full deploy guide.
 
 ## Security notes
 

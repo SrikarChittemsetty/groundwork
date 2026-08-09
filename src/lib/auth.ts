@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { assertProductionEnv } from "@/lib/env";
 
 // Lightweight session auth: a signed (HS256) JWT stored in an httpOnly cookie.
 // Good enough for a single-user / small-scale MVP and cleanly multi-user.
@@ -18,6 +19,10 @@ function getSecret(): Uint8Array {
 }
 
 export async function createSession(userId: string): Promise<void> {
+  // Refuse to mint a session under unsafe production config (placeholder
+  // secrets, dev auto-login left on, SQLite on ephemeral hosting).
+  assertProductionEnv();
+
   const token = await new SignJWT({ sub: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
