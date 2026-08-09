@@ -870,6 +870,46 @@ button.chip.on:hover:not(:disabled) {
 
 .reflection {
   line-height: 1.7;
+  /* Model output can contain a long unbroken token (a URL, a pasted id).
+     Without this it escapes the card and forces the page to scroll sideways. */
+  overflow-wrap: anywhere;
+}
+.reflection ol {
+  padding-left: 18px;
+  margin: 8px 0;
+}
+.reflection ol li {
+  margin: 7px 0;
+  color: var(--text-secondary);
+}
+.reflection code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.reflection pre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.reflection pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.reflection blockquote {
+  margin: 10px 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent-line);
+  color: var(--text-secondary);
+}
+.reflection em {
+  font-style: italic;
 }
 .reflection h2 {
   font-family: var(--font-display);

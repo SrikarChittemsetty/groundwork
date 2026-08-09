@@ -53,3 +53,64 @@ describe("renderReflectionHtml", () => {
     expect(renderReflectionHtml("")).toBe("");
   });
 });
+
+// The model is asked for headings and bullets but isn't bound to that. These
+// cover what it actually tends to return when it strays.
+describe("renderReflectionHtml: formats the model doesn't promise", () => {
+  it("renders numbered lists as an ordered list", () => {
+    const out = renderReflectionHtml("1. first\n2. second");
+    expect(out).toContain("<ol>");
+    expect(out).toContain("<li>first</li>");
+    expect(out).toContain("</ol>");
+  });
+
+  it("switches cleanly between bullet and numbered lists", () => {
+    const out = renderReflectionHtml("- bullet\n1. numbered");
+    expect(out.indexOf("</ul>")).toBeLessThan(out.indexOf("<ol>"));
+  });
+
+  it("renders any heading level as h2 to keep one visual hierarchy", () => {
+    expect(renderReflectionHtml("#### deep")).toBe("<h2>deep</h2>");
+  });
+
+  it("renders blockquotes", () => {
+    expect(renderReflectionHtml("> quoted")).toBe(
+      "<blockquote>quoted</blockquote>"
+    );
+  });
+
+  it("renders inline code without letting it inject markup", () => {
+    const out = renderReflectionHtml("use `<script>` carefully");
+    expect(out).toContain("<code>&lt;script&gt;</code>");
+    expect(out).not.toContain("<script>");
+  });
+
+  it("does not interpret markdown inside a fenced code block", () => {
+    const out = renderReflectionHtml("```\n## not a heading\n- not a bullet\n```");
+    expect(out).toContain("<pre><code>");
+    expect(out).toContain("## not a heading");
+    expect(out).not.toContain("<h2>");
+    expect(out).not.toContain("<li>");
+  });
+
+  it("still renders an unterminated code fence instead of dropping it", () => {
+    const out = renderReflectionHtml("```\ndangling content");
+    expect(out).toContain("dangling content");
+  });
+
+  it("escapes HTML inside fenced code", () => {
+    const out = renderReflectionHtml("```\n<img src=x onerror=alert(1)>\n```");
+    expect(out).not.toContain("<img");
+    expect(out).toContain("&lt;img");
+  });
+
+  it("renders single-asterisk emphasis without breaking bold", () => {
+    expect(renderReflectionHtml("*soft* and **hard**")).toBe(
+      "<p><em>soft</em> and <strong>hard</strong></p>"
+    );
+  });
+
+  it("leaves a lone asterisk alone", () => {
+    expect(renderReflectionHtml("2 * 3 = 6")).toBe("<p>2 * 3 = 6</p>");
+  });
+});
