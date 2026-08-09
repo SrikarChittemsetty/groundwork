@@ -32,6 +32,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
+      <head>
+        {/*
+          Resolve the theme before first paint. Without this, a light-theme
+          user gets a dark flash on every navigation — jarring in a tool
+          meant to feel calm. An explicit choice wins over the system
+          preference.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('vm-theme');var m=window.matchMedia('(prefers-color-scheme: light)').matches;if(s==='light'||(!s&&m)){document.documentElement.dataset.theme='light';}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

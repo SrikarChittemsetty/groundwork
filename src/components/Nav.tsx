@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const LINKS = [
   { href: "/values", label: "Values" },
@@ -39,6 +40,7 @@ export default function Nav() {
           ))}
         </nav>
         <span className="spacer" />
+        <ThemeToggle />
         <button className="ghost" onClick={logout}>
           Sign out
         </button>
