@@ -142,15 +142,29 @@ page tells the truth about which mode you're in.
   mock output so the full loop is demoable. In production a missing key fails
   loudly instead.
 
-### One dev-server gotcha
+### Checking a change actually works
 
-`next dev` holds the generated Prisma client in its module graph, so after any
-`prisma generate` — which `prisma db push` runs unless you pass
-`--skip-generate` — **restart the dev server**. Otherwise routes 500 with
-"Unknown field" on a column that plainly exists, while `npm test` stays green
-because Vitest loads the client fresh. Running `npm run build` against a
-running `next dev` also clobbers its `.next`, which shows up as an unstyled
-page rather than an error.
+```bash
+npm run verify
+```
+
+Types, tests, a real production bundle, and every page in the app loaded
+against the running dev server. The last two exist because "typecheck clean,
+tests green, app broken" has happened three times here, and neither tsc nor
+Vitest could have caught any of them:
+
+- A client component imported a helper that pulled in `node:crypto`. Fails
+  `next build`; invisible to tsc and Vitest, because neither bundles.
+- `next dev` kept a stale Prisma client after a schema change, so routes 500'd
+  on a column that plainly existed. Vitest loads the client fresh, so the suite
+  never saw it. **After any `prisma generate` — which `prisma db push` runs
+  unless you pass `--skip-generate` — restart the dev server.**
+- `next build` clobbered the running dev server's `.next`, and the app started
+  serving chunks that no longer existed. `npm run build:check` now builds into
+  a scratch directory for exactly this reason, so verifying never breaks the
+  server you're verifying against.
+
+`npm run smoke` runs the page checks alone against an already-running server.
 
 ## Tests
 

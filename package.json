@@ -12,7 +12,10 @@
     "test:watch": "vitest",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "smoke": "node scripts/smoke.mjs",
+    "build:check": "NEXT_DIST_DIR=.next-verify next build",
+    "verify": "tsc --noEmit && vitest run && npm run build:check && npm run smoke"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
