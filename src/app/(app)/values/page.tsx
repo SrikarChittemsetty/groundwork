@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatDate } from "@/lib/format";
 
 type Value = {
@@ -118,8 +119,9 @@ export default function ValuesPage() {
     <>
       <h1>Your values</h1>
       <p className="subtitle">
-        Write down the core values you hold. Be honest and specific — this is
-        just for you.
+        What you say you hold. Stating these is the easy part — the work is in{" "}
+        <Link href="/positions">taking a position apart</Link> until you reach
+        what sits underneath. Be honest and specific; this is just for you.
       </p>
 
       <form onSubmit={add} className="card-form">

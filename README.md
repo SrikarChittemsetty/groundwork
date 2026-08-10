@@ -1,9 +1,26 @@
 # Values Mirror
 
-A private tool that helps you check whether you're actually living consistently
-with your own stated values — an honest mirror, not a judge. Log your core
-values, log real decisions over time, and get an honest, non-judgmental
-AI-assisted reflection on where they line up and where they don't.
+A Socratic journal for reasoning from your own axioms.
+
+You state a position. It asks why. It asks why of the answer, and keeps asking
+until you reach something with no reason underneath it — that is an axiom, and
+it's yours. Axioms accumulate across positions, so you find out which few
+commitments actually sit under everything you think.
+
+You also log real decisions. With a model configured, it will reason both
+ways — forward from your axioms to the choice in front of you, backward from
+what you did to where it diverged — and every step has to cite the entry of
+yours it rests on. Steps that cite nothing are marked as the model's own
+import, because a premise it brought with it should never read like one of
+yours.
+
+**The only verdict is the one you arrive at yourself.** Nothing here scores
+you, ranks you, or tells you what to do. There is no progress bar on purpose:
+a number you could be good or bad at turns the thing into something to perform
+for, and the honesty is what makes the record worth keeping.
+
+> The interrogation needs no model, no API key, and no network. See
+> [The AI is optional](#the-ai-is-optional).
 
 ## The AI is optional
 

@@ -95,7 +95,8 @@ export default function PositionsPage() {
           <p className="notice">
             Most positions survive two or three whys. The interesting ones stop
             somewhere you didn&apos;t expect — and the same few stopping points
-            turn out to sit under nearly everything you think.
+            turn out to sit under nearly everything you think. Those
+            accumulate on <Link href="/axioms">Axioms</Link>.
           </p>
         </div>
       ) : (
