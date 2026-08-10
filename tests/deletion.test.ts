@@ -98,6 +98,9 @@ async function buildAnAccountWithEverything() {
   await prisma.axiomTension.create({
     data: { userId: doomed.id, aId, bId, note: "enc" },
   });
+  await prisma.axiomVersion.create({
+    data: { axiomId: axiom.id, userId: doomed.id, statement: "enc" },
+  });
 
   await prisma.passwordReset.create({
     data: {
@@ -203,6 +206,7 @@ describe("deleting an account", () => {
       ["Position", () => prisma.position.count({ where: { userId: doomed.id } })],
       ["ReasonNode", () => prisma.reasonNode.count({ where: { userId: doomed.id } })],
       ["Axiom", () => prisma.axiom.count({ where: { userId: doomed.id } })],
+      ["AxiomVersion", () => prisma.axiomVersion.count({ where: { userId: doomed.id } })],
       ["AxiomTension", () => prisma.axiomTension.count({ where: { userId: doomed.id } })],
       ["PasswordReset", () => prisma.passwordReset.count({ where: { userId: doomed.id } })],
       ["CircleMember", () => prisma.circleMember.count({ where: { userId: doomed.id } })],

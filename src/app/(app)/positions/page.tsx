@@ -4,12 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
 
+type Shift = {
+  axiomId: string;
+  statement: string;
+  kind: "revised" | "retired";
+  at: string;
+};
+
 type Position = {
   id: string;
   statement: string;
   steps: number;
   bedrock: number;
   settled: boolean;
+  restsOn: { id: string; statement: string }[];
+  inQuestion: boolean;
+  inQuestionBecause: string;
+  shifts: Shift[];
   createdAt: string;
 };
 
@@ -50,6 +61,8 @@ export default function PositionsPage() {
     }
   }
 
+  const inQuestion = positions.filter((p) => p.inQuestion);
+
   return (
     <>
       <h1>Positions</h1>
@@ -84,6 +97,28 @@ export default function PositionsPage() {
         </div>
       </form>
 
+      {inQuestion.length > 0 && (
+        <div className="card notice-card">
+          <div className="title">
+            {inQuestion.length === 1
+              ? "One settled position is standing on ground that moved"
+              : `${inQuestion.length} settled positions are standing on ground that moved`}
+          </div>
+          <div className="body-text">
+            You changed something you'd reached bedrock on. These were settled
+            against the older wording, so what they rest on isn't quite what it
+            was. Nothing has been un-settled for you — that call is yours.
+          </div>
+          <ul className="plain-list">
+            {inQuestion.map((p) => (
+              <li key={p.id}>
+                <Link href={`/positions/${p.id}`}>{p.statement}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <h2>Taken apart so far</h2>
       {loading ? (
         <div className="skeleton card-skeleton" />
@@ -114,9 +149,28 @@ export default function PositionsPage() {
                       : ", none reached bedrock yet"
                   }`}
             </div>
+            {p.inQuestion && (
+              <div className="body-text shifted">
+                {p.inQuestionBecause}{" "}
+                {p.shifts.map((sh) => (
+                  <span key={sh.axiomId} className="shift-item">
+                    &ldquo;{sh.statement}&rdquo;{" "}
+                    <span className="meta">
+                      ({sh.kind === "retired" ? "no longer held" : "reworded"}{" "}
+                      {formatDate(sh.at)})
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="card-actions">
               <span className="meta">
-                {p.settled ? "Settled" : "Open"} · {formatDate(p.createdAt)}
+                {p.inQuestion
+                  ? "Settled, in question"
+                  : p.settled
+                    ? "Settled"
+                    : "Open"}{" "}
+                · {formatDate(p.createdAt)}
               </span>
               <Link href={`/positions/${p.id}`}>
                 <button className="ghost">

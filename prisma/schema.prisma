@@ -30,6 +30,7 @@ model User {
   consultations Consultation[]
   positions     Position[]
   axioms        Axiom[]
+  axiomVersions AxiomVersion[]
   tensions      AxiomTension[]
   resets        PasswordReset[]
   ownedCircles  Circle[]        @relation("CircleOwner")
@@ -193,16 +194,45 @@ model ReasonNode {
 // Axioms accumulate across positions on purpose: the discovery that ten
 // different arguments all bottom out in the same three commitments is the
 // most useful thing this tool can show you.
+// Changing one is the point at which this stops being a journal. If a position
+// rests on an axiom and the axiom moves, whatever was derived from it is no
+// longer derived — it's just a conclusion you happen to still be holding.
+// `revisedAt` and `retiredAt` are what everything downstream is compared
+// against, so the consequence is computed rather than remembered.
+//
+// Retiring is deliberately not deleting. "I no longer hold this" is a fact
+// about you worth keeping, and the positions that were built on it need to
+// still show what they were built on.
 model Axiom {
   id         String       @id @default(cuid())
   userId     String
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   statement  String
   createdAt  DateTime     @default(now())
+  revisedAt  DateTime?
+  retiredAt  DateTime?
   nodes      ReasonNode[]
+  versions   AxiomVersion[]
   tensionsA  AxiomTension[] @relation("TensionA")
   tensionsB  AxiomTension[] @relation("TensionB")
 
+  @@index([userId])
+}
+
+// What an axiom used to say. Same reasoning as ValueVersion: rewording what
+// you hold as bedrock is exactly the change you'd most want to be able to look
+// back at, and an edit that overwrites it destroys the only evidence that you
+// moved.
+model AxiomVersion {
+  id        String   @id @default(cuid())
+  axiomId   String
+  axiom     Axiom    @relation(fields: [axiomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statement String
+  createdAt DateTime @default(now())
+
+  @@index([axiomId])
   @@index([userId])
 }
 

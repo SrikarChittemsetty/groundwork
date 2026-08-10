@@ -41,7 +41,10 @@ export async function buildExport(userId: string) {
     prisma.axiom.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
-      include: { nodes: { include: { position: true } } },
+      include: {
+        nodes: { include: { position: true } },
+        versions: { orderBy: { createdAt: "asc" } },
+      },
     }),
     prisma.axiomTension.findMany({
       where: { userId },
@@ -91,6 +94,16 @@ export async function buildExport(userId: string) {
       reachedFrom: [
         ...new Set(a.nodes.map((n) => safeDecrypt(n.position.statement))),
       ],
+      // What it used to say. The wording your settled arguments were actually
+      // settled against, which is the part an export would most obviously be
+      // missing if it only carried the current text.
+      history: a.versions.map((v) => ({
+        statement: safeDecrypt(v.statement),
+        until: v.createdAt,
+      })),
+      stillHeld: a.retiredAt === null,
+      retiredAt: a.retiredAt,
+      revisedAt: a.revisedAt,
       createdAt: a.createdAt,
     })),
 

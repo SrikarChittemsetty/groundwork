@@ -88,6 +88,9 @@ beforeAll(async () => {
   const axiom2 = await prisma.axiom.create({
     data: { userId, statement: e("MARK-axiom-two") },
   });
+  await prisma.axiomVersion.create({
+    data: { axiomId: axiom.id, userId, statement: e("MARK-axiom-old-wording") },
+  });
   await prisma.reasonNode.create({
     data: {
       positionId: position.id,
@@ -166,6 +169,7 @@ describe("the export is actually complete", () => {
     "MARK-position",
     "MARK-reason",
     "MARK-axiom",
+    "MARK-axiom-old-wording",
     "MARK-tension-note",
     "MARK-tension-resolution",
     "MARK-circle",
@@ -214,6 +218,7 @@ describe("no user-owned model escapes the export unnoticed", () => {
     "Position",
     "ReasonNode",
     "Axiom",
+    "AxiomVersion",
     "AxiomTension",
     "Circle",
     "CircleMember",

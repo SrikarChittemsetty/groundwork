@@ -1209,3 +1209,91 @@ select:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* When the ground moves under a settled position
+   ---------------------------------------------------------------------------
+   Reuses the same hue as value revisions, because it's the same idea: the
+   wording changed and the older one still matters. Deliberately NOT the danger
+   colour — nothing has gone wrong. A premise moved and the things resting on
+   it are worth another look, which is the product working, not failing. */
+.notice-card {
+  border-color: var(--revised-hue);
+  background: linear-gradient(
+    to bottom,
+    var(--revised-dim),
+    var(--surface) 60%
+  );
+}
+
+.notice-card .title {
+  font-family: var(--font-display);
+}
+
+.plain-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.plain-list li + li {
+  margin-top: 4px;
+}
+
+.body-text.shifted {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--revised-hue);
+  background: var(--revised-dim);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.shift-item {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+}
+
+/* An axiom you no longer hold
+   ---------------------------------------------------------------------------
+   Dimmed rather than removed. "I used to think this was bedrock" is a real
+   fact about a person, and the arguments built on it still need to show what
+   they were built on. Not struck through: this wasn't a mistake. */
+.card.retired {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.card.retired .title {
+  color: var(--text-secondary);
+}
+
+/* A dependent position that was settled before its axiom moved. */
+.tag-shifted {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--revised-hue);
+  background: var(--revised-dim);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+.edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-box label {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

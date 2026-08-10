@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { encrypt, safeDecrypt } from "@/lib/crypto";
+import { shiftsUnder, describeShifts } from "@/lib/derive";
 
 export async function GET() {
   const userId = await getUserId();
@@ -10,19 +11,62 @@ export async function GET() {
   const rows = await prisma.position.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    include: { nodes: { select: { id: true, isBedrock: true } } },
+    include: {
+      nodes: {
+        select: {
+          id: true,
+          isBedrock: true,
+          // The axioms this argument bottoms out in are what it stands on, so
+          // whether they've moved since is part of the position's state.
+          axiom: {
+            select: {
+              id: true,
+              statement: true,
+              createdAt: true,
+              revisedAt: true,
+              retiredAt: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return NextResponse.json({
-    positions: rows.map((p) => ({
-      id: p.id,
-      statement: safeDecrypt(p.statement),
-      steps: p.nodes.length,
-      // How many chains you actually took all the way down.
-      bedrock: p.nodes.filter((n) => n.isBedrock).length,
-      settled: p.settledAt !== null,
-      createdAt: p.createdAt,
-    })),
+    positions: rows.map((p) => {
+      // One position can reach the same axiom down two branches; it should
+      // only be reported once.
+      const restsOn = [
+        ...new Map(
+          p.nodes
+            .filter((n) => n.axiom)
+            .map((n) => [
+              n.axiom!.id,
+              { ...n.axiom!, statement: safeDecrypt(n.axiom!.statement) },
+            ])
+        ).values(),
+      ];
+      const shifts = shiftsUnder(
+        { id: p.id, settledAt: p.settledAt },
+        restsOn
+      );
+
+      return {
+        id: p.id,
+        statement: safeDecrypt(p.statement),
+        steps: p.nodes.length,
+        // How many chains you actually took all the way down.
+        bedrock: p.nodes.filter((n) => n.isBedrock).length,
+        settled: p.settledAt !== null,
+        restsOn: restsOn.map((a) => ({ id: a.id, statement: a.statement })),
+        // Settled, but on ground that has moved since. Not un-settled on the
+        // person's behalf — flagged, and they decide.
+        inQuestion: shifts.length > 0,
+        inQuestionBecause: describeShifts(shifts),
+        shifts,
+        createdAt: p.createdAt,
+      };
+    }),
   });
 }
 
@@ -49,6 +93,10 @@ export async function POST(req: Request) {
       steps: 0,
       bedrock: 0,
       settled: false,
+      restsOn: [],
+      inQuestion: false,
+      inQuestionBecause: "",
+      shifts: [],
       createdAt: position.createdAt,
     },
   });

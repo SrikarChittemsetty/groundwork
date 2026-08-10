@@ -7,7 +7,10 @@ import { formatDate } from "@/lib/format";
 type Axiom = {
   id: string;
   statement: string;
-  reachedFrom: { id: string; statement: string }[];
+  reachedFrom: { id: string; statement: string; inQuestion: boolean }[];
+  history: { statement: string; createdAt: string }[];
+  revisedAt: string | null;
+  retiredAt: string | null;
   createdAt: string;
 };
 
@@ -39,6 +42,9 @@ export default function AxiomsClient() {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  // Which axiom is open for rewording, and the text in the box.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   async function load() {
     const [aRes, tRes] = await Promise.all([
@@ -113,6 +119,35 @@ export default function AxiomsClient() {
     load();
   }
 
+  // Rewording an axiom is the edit with the longest reach in the app: every
+  // settled position that bottoms out here gets flagged for another look.
+  async function saveEdit(id: string) {
+    const next = editText.trim();
+    if (!next) return;
+    const res = await fetch(`/api/axioms/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statement: next }),
+    });
+    if (res.ok) {
+      setEditing(null);
+      setEditText("");
+      load();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not save.");
+    }
+  }
+
+  async function setRetired(id: string, retired: boolean) {
+    const res = await fetch(`/api/axioms/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ retired }),
+    });
+    if (res.ok) load();
+  }
+
   const sorted = [...axioms].sort(
     (a, b) => b.reachedFrom.length - a.reachedFrom.length
   );
@@ -141,8 +176,64 @@ export default function AxiomsClient() {
       ) : (
         <>
           {sorted.map((a) => (
-            <article key={a.id} className="card interactive">
-              <div className="title">{a.statement}</div>
+            <article
+              key={a.id}
+              className={`card interactive${a.retiredAt ? " retired" : ""}`}
+            >
+              {editing === a.id ? (
+                <div className="edit-box">
+                  <label htmlFor={`edit-${a.id}`}>Reword this axiom</label>
+                  <textarea
+                    id={`edit-${a.id}`}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    style={{ minHeight: 70 }}
+                  />
+                  {a.reachedFrom.length > 0 && (
+                    <p className="footnote">
+                      {a.reachedFrom.length === 1
+                        ? "One position bottoms out here"
+                        : `${a.reachedFrom.length} positions bottom out here`}
+                      . Any of them you'd already settled will be flagged for
+                      another look — they were settled against the wording
+                      you're about to change. The old wording is kept.
+                    </p>
+                  )}
+                  <div className="card-actions">
+                    <button onClick={() => saveEdit(a.id)}>Save</button>
+                    <button className="ghost" onClick={() => setEditing(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="title">{a.statement}</div>
+              )}
+              {a.retiredAt && (
+                <div className="body-text notice">
+                  You no longer hold this. It stays here because what you built
+                  on it is still worth being able to trace.
+                </div>
+              )}
+              {a.history.length > 0 && (
+                <details className="history">
+                  <summary>
+                    Reworded {a.history.length}{" "}
+                    {a.history.length === 1 ? "time" : "times"} — what it used
+                    to say
+                  </summary>
+                  <ul className="facts">
+                    {[...a.history].reverse().map((h, i) => (
+                      <li key={i}>
+                        &ldquo;{h.statement}&rdquo;{" "}
+                        <span className="meta">
+                          until {formatDate(h.createdAt)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               {a.reachedFrom.length === 0 ? (
                 <div className="body-text notice">
                   Stated directly — nothing has been traced down to it yet.
@@ -158,14 +249,39 @@ export default function AxiomsClient() {
                     {a.reachedFrom.map((p) => (
                       <li key={p.id}>
                         <Link href={`/positions/${p.id}`}>{p.statement}</Link>
+                        {p.inQuestion && (
+                          <span className="tag-shifted">
+                            settled before this changed
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
                 </>
               )}
               <div className="card-actions">
-                <span className="meta">Since {formatDate(a.createdAt)}</span>
-                {sorted.length > 1 && (
+                <span className="meta">
+                  Since {formatDate(a.createdAt)}
+                  {a.revisedAt && ` · reworded ${formatDate(a.revisedAt)}`}
+                </span>
+                {editing !== a.id && !a.retiredAt && (
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      setEditing(a.id);
+                      setEditText(a.statement);
+                    }}
+                  >
+                    Reword
+                  </button>
+                )}
+                <button
+                  className="ghost"
+                  onClick={() => setRetired(a.id, !a.retiredAt)}
+                >
+                  {a.retiredAt ? "I hold this again" : "I no longer hold this"}
+                </button>
+                {sorted.length > 1 && !a.retiredAt && (
                   <button
                     className={`chip${pair.includes(a.id) ? " on" : ""}`}
                     aria-pressed={pair.includes(a.id)}
