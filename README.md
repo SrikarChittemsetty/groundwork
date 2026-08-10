@@ -74,7 +74,17 @@ page tells the truth about which mode you're in.
 ## What's here (v0.1 MVP scope)
 
 - Email/password auth (multi-user capable; fine to use solo), with password
-  change and brute-force throttling on sign-in
+  change, **password reset**, and brute-force throttling on sign-in. Resets
+  lose nothing: entries are encrypted with an application key, not one derived
+  from your password
+- **Positions and axioms** — state something you hold, get asked why until you
+  reach something with no reason underneath it. No model involved. Axioms
+  accumulate across positions, so you find out which few commitments sit under
+  everything you think
+- **Reason** (optional, AI) — forward from your axioms to a choice, or backward
+  from what you did to where it diverged. Every step must cite the entry of
+  yours it rests on; steps that cite nothing are marked as the model's own
+  import rather than passing as yours
 - Decisions can be tagged with **which values they bear on** — your judgment,
   not the tool's — which is fed to the AI features so tension is grounded in
   what you said the decision was about

@@ -65,6 +65,9 @@ export default function LoginPage() {
           No account? <Link href="/signup">Create one</Link>
         </p>
         <p className="footnote">
+          <Link href="/forgot">Forgot your password?</Link>
+        </p>
+        <p className="footnote">
           <Link href="/privacy">How your data is handled</Link>
         </p>
       </div>

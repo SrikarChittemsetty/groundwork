@@ -30,6 +30,7 @@ model User {
   consultations Consultation[]
   positions     Position[]
   axioms        Axiom[]
+  resets        PasswordReset[]
 }
 
 // Failed sign-in attempts, used to throttle brute-force guessing.
@@ -45,6 +46,27 @@ model LoginAttempt {
   createdAt DateTime @default(now())
 
   @@index([email, ip, createdAt])
+}
+
+// A password reset in flight.
+//
+// Only the SHA-256 of the token is stored. A reset table full of usable
+// tokens is a second password database, and this one would hand over an
+// account holding somebody's beliefs. The plaintext exists in the link and
+// nowhere else.
+//
+// Resets are safe here because entries are encrypted with an application key,
+// not one derived from the password — changing a password loses nothing.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // A stated core value/belief. `title` and `body` are ciphertext and always hold

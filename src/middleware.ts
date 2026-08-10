@@ -10,9 +10,16 @@ import { DEV_AUTOLOGIN } from "@/lib/dev";
 const COOKIE_NAME = "vm_session";
 // Readable without an account — you should be able to see how your data would
 // be handled BEFORE handing any over.
-const PUBLIC_PATHS = ["/login", "/signup", "/privacy", "/shared"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/privacy",
+  "/shared",
+  "/forgot",
+  "/reset",
+];
 // Public pages that are pointless once signed in.
-const AUTH_PATHS = ["/login", "/signup"];
+const AUTH_PATHS = ["/login", "/signup", "/forgot", "/reset"];
 
 function getSecret(): Uint8Array {
   return new TextEncoder().encode(process.env.AUTH_SECRET || "");

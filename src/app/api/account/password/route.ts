@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { getUserId, createSession } from "@/lib/auth";
+import { invalidateResetsFor } from "@/lib/passwordReset";
 
 export async function POST(req: Request) {
   const userId = await getUserId();
@@ -44,6 +45,10 @@ export async function POST(req: Request) {
     where: { id: user.id },
     data: { passwordHash: await bcrypt.hash(newPassword, 12) },
   });
+
+  // Any reset link already in an inbox must stop working — otherwise
+  // changing your password wouldn't actually shut out whoever prompted it.
+  await invalidateResetsFor(user.id);
 
   // Issue a fresh session so the cookie isn't one minted before the change.
   await createSession(user.id);
