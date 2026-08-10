@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
+import { shiftsUnder, describeShifts } from "@/lib/derive";
 
 // One position with its whole reason tree.
 //
@@ -25,11 +26,32 @@ export async function GET(
   });
   if (!position) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
+  // The axioms this argument bottoms out in, and whether any has moved since
+  // the position was settled. Same computation as the list, so a position
+  // can't look settled here and in question there.
+  const restsOn = [
+    ...new Map(
+      position.nodes
+        .filter((n) => n.axiom)
+        .map((n) => [
+          n.axiom!.id,
+          { ...n.axiom!, statement: safeDecrypt(n.axiom!.statement) },
+        ])
+    ).values(),
+  ];
+  const shifts = shiftsUnder(
+    { id: position.id, settledAt: position.settledAt },
+    restsOn
+  );
+
   return NextResponse.json({
     position: {
       id: position.id,
       statement: safeDecrypt(position.statement),
       settled: position.settledAt !== null,
+      inQuestion: shifts.length > 0,
+      inQuestionBecause: describeShifts(shifts),
+      shifts,
       createdAt: position.createdAt,
       nodes: position.nodes.map((n) => ({
         id: n.id,

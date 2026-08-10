@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 
 type Node = {
   id: string;
@@ -14,10 +15,20 @@ type Node = {
   createdAt: string;
 };
 
+type Shift = {
+  axiomId: string;
+  statement: string;
+  kind: "revised" | "retired";
+  at: string;
+};
+
 type Position = {
   id: string;
   statement: string;
   settled: boolean;
+  inQuestion: boolean;
+  inQuestionBecause: string;
+  shifts: Shift[];
   createdAt: string;
   nodes: Node[];
 };
@@ -233,6 +244,29 @@ export default function PositionPage() {
           ? "Why do you hold this? Answer, and you'll be asked why of the answer."
           : "Keep going until each branch reaches something with no reason underneath it."}
       </p>
+
+      {position.inQuestion && (
+        <div className="card notice-card">
+          <div className="title">This was settled against different ground</div>
+          <div className="body-text">
+            {position.inQuestionBecause} What you argued down to isn&apos;t
+            quite what it was when you settled, so the argument above may or
+            may not still hold. Reading it again is the only way to know — and
+            if it does still hold, settling it again says so.
+          </div>
+          <ul className="plain-list">
+            {position.shifts.map((sh) => (
+              <li key={sh.axiomId}>
+                &ldquo;{sh.statement}&rdquo;{" "}
+                <span className="meta">
+                  ({sh.kind === "retired" ? "no longer held" : "reworded"} on{" "}
+                  {formatDate(sh.at)})
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div aria-live="polite">{error && <div className="error">{error}</div>}</div>
 
