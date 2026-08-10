@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { encrypt, safeDecrypt } from "@/lib/crypto";
-import { isMember } from "@/lib/circles";
+import { isMember, readToken } from "@/lib/circles";
 
 // Everything you have shared, so you can see at a glance what is visible to
 // whom and pull any of it back. Includes hidden shares — they're yours, and
@@ -33,7 +33,7 @@ export async function GET() {
       hidden: s.hiddenAt !== null,
       circleId: s.circleId,
       circleName: s.circle ? safeDecrypt(s.circle.name) : null,
-      linkTokens: s.links.map((l) => l.token),
+      linkTokens: s.links.map((l) => readToken(l)),
       commentCount: s._count.comments,
       createdAt: s.createdAt,
     })),

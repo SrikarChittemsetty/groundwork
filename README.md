@@ -158,7 +158,16 @@ Covers the things that would be quietly catastrophic if they broke:
   actually present in both system prompts, so a future edit can't quietly turn
   the tool into a judge
 - **Per-user scoping** — one user cannot read, edit, or delete another's data
-  even with a valid row id, and account deletion cascades to every table
+  even with a valid row id
+- **Sharing boundaries** — a share is visible only through a circle you're in
+  or a live link you hold; revoking, hiding, expiring, and binding an invite
+  to one address all actually stop working when they say they do
+- **Bearer tokens** — invite and share-link tokens never appear in the
+  database in the clear, and a token still resolves after being stored
+- **Deletion** — runs the real `purgeAccount()` and then checks *every* table
+  in the schema for anything left behind, including rows keyed to your email
+  rather than your id. The list is exhaustive on purpose: adding a model
+  without a cascade fails here rather than in production
 
 Tests run against a throwaway SQLite file, never your dev database.
 

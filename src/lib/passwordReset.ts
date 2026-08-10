@@ -1,5 +1,5 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { newToken, hashToken, hashesMatch } from "@/lib/tokens";
 
 // Password resets.
 //
@@ -7,24 +7,14 @@ import { prisma } from "@/lib/db";
 // so it gets treated like one: 32 bytes of entropy, stored only as a hash,
 // single use, short-lived, and every outstanding token for the account is
 // killed the moment any of them is spent.
+//
+// Unlike invites and share links, a reset token is never re-displayed — if
+// you lose it you ask for another — so there is no encrypted copy of it.
 
 export const RESET_TTL_HOURS = 1;
 
-export function newResetToken(): string {
-  return randomBytes(32).toString("base64url");
-}
-
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-// Constant-time compare, so a caller can't learn a hash prefix by timing.
-export function hashesMatch(a: string, b: string): boolean {
-  const ba = Buffer.from(a, "utf8");
-  const bb = Buffer.from(b, "utf8");
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
-}
+export const newResetToken = newToken;
+export { hashToken, hashesMatch };
 
 export async function createReset(userId: string): Promise<string> {
   const token = newResetToken();

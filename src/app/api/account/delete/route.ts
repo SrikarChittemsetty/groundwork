@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId, destroySession } from "@/lib/auth";
+import { purgeAccount } from "@/lib/account";
 
-// User-initiated full account + data deletion. Cascades to values, decisions,
-// and reflections via the schema's onDelete: Cascade. This is irreversible by
-// design and requires the user to type their email to confirm.
+// User-initiated full account + data deletion. Irreversible by design, and it
+// requires the user to type their email to confirm. The removal itself lives
+// in purgeAccount() so the tests can exercise the real code path.
 export async function POST(req: Request) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     );
   }
 
-  await prisma.user.delete({ where: { id: userId } });
+  await purgeAccount(userId, user.email);
   destroySession();
 
   return NextResponse.json({ ok: true });

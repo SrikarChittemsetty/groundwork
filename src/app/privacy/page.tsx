@@ -24,9 +24,19 @@ export default function PrivacyPage() {
       <h2>What this tool stores</h2>
       <div className="card">
         <p>
-          Your email address, a hashed version of your password, the values you
-          write down, the decisions you log, and any reflections or guidance you
-          generate. That&apos;s all of it.
+          Your email address and a hashed version of your password. Then
+          everything you write: your values and their earlier wordings, the
+          decisions you log, the positions you take and every &quot;why?&quot;
+          you answer underneath them, the axioms those chains bottom out in,
+          the tensions you mark between them, reflections and guidance
+          (whether you wrote them or generated them), and anything you shared
+          — the circles you&apos;re in, what you put in them, and the replies.
+        </p>
+        <p className="footnote">
+          If that list ever stops matching what the app does, the list is the
+          thing that&apos;s wrong. Every kind of entry named here also appears
+          in your export and is removed when you delete your account; both are
+          checked by tests rather than by memory.
         </p>
       </div>
 
@@ -52,11 +62,20 @@ export default function PrivacyPage() {
       <h2>How it&apos;s protected</h2>
       <div className="card">
         <p>
-          Every value, decision, and reflection is encrypted (AES-256-GCM)
-          before it is written to the database, so a stolen database file
-          contains only ciphertext. Your password is stored as a bcrypt hash,
-          never in plain text. Sessions use a signed, httpOnly cookie. When
-          deployed, all traffic runs over HTTPS.
+          Everything you write is encrypted (AES-256-GCM) before it is written
+          to the database — values, decisions, positions, reasons, axioms,
+          tensions, reflections, shares, and replies alike. Your password is
+          stored as a bcrypt hash, never in plain text. Invite and share links
+          are stored hashed as well, so a copy of the database doesn&apos;t
+          hand someone a working way into a circle. Sessions use a signed,
+          httpOnly cookie. When deployed, all traffic runs over HTTPS.
+        </p>
+        <p>
+          <strong>What isn&apos;t encrypted:</strong> your email address, since
+          it&apos;s how you sign in, and the timestamps and shape of your
+          entries — how many there are, when you wrote them, which value a
+          decision was filed under. Someone holding the database file
+          couldn&apos;t read a word you wrote, but could see that you wrote.
         </p>
       </div>
 
@@ -99,7 +118,11 @@ export default function PrivacyPage() {
           <Link href="/settings">Settings</Link>.
         </p>
         <p>
-          Data is kept until you delete it. Nothing is retained after deletion.
+          Data is kept until you delete it. Nothing is retained after deletion
+          — not the rows keyed to your account, and not the ones keyed only to
+          your email address, like sign-in attempt records or an invitation
+          someone else sent you. Anything you shared into a circle leaves it
+          when you go.
         </p>
       </div>
 

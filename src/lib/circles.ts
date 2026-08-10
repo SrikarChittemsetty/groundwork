@@ -1,5 +1,6 @@
-import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { newToken, hashToken } from "@/lib/tokens";
+import { encrypt, safeDecrypt } from "@/lib/crypto";
 
 // Membership and access checks for sharing.
 //
@@ -9,10 +10,21 @@ import { prisma } from "@/lib/db";
 // in its circle and it isn't hidden, or you hold a live link to it. There is
 // no third way, and there is no way to browse a person rather than a circle.
 
-export function newToken(): string {
-  // 32 bytes of entropy, url-safe. These are bearer tokens — guessing one must
-  // be infeasible, since holding it is the whole authorization.
-  return randomBytes(32).toString("base64url");
+// Both bearer tokens here are stored twice: hashed so they can be looked up,
+// encrypted so the person who made the link can read it back. Neither form is
+// usable from the database file alone.
+export function tokenColumns(): {
+  plain: string;
+  tokenHash: string;
+  tokenEnc: string;
+} {
+  const plain = newToken();
+  return { plain, tokenHash: hashToken(plain), tokenEnc: encrypt(plain) };
+}
+
+// Reading a stored token back out for display to its owner.
+export function readToken(row: { tokenEnc: string }): string {
+  return safeDecrypt(row.tokenEnc);
 }
 
 export async function isMember(
@@ -100,8 +112,9 @@ export async function markRead(circleId: string, userId: string) {
 // invites resolve to null rather than erroring differently, so a probe can't
 // distinguish "wrong token" from "token that used to work".
 export async function resolveInvite(token: string) {
+  if (!token) return null;
   const invite = await prisma.circleInvite.findUnique({
-    where: { token },
+    where: { tokenHash: hashToken(token) },
     include: { circle: true },
   });
   if (!invite) return null;
@@ -126,8 +139,9 @@ export function inviteAllows(
 // Resolve a public share link. Returns null for revoked, expired, hidden, or
 // unknown — a link to something the owner has since hidden must stop working.
 export async function resolveShareLink(token: string) {
+  if (!token) return null;
   const link = await prisma.shareLink.findUnique({
-    where: { token },
+    where: { tokenHash: hashToken(token) },
     include: { share: true },
   });
   if (!link) return null;

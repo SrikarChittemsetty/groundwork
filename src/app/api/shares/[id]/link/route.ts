@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
-import { newToken } from "@/lib/circles";
+import { tokenColumns } from "@/lib/circles";
+import { hashToken } from "@/lib/tokens";
 
 // Mint a one-off link to a single share, for showing your reasoning to someone
 // who isn't in any circle. Bearer token, view-only, revocable, and optionally
@@ -26,12 +27,13 @@ export async function POST(
     expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   }
 
+  const { plain, tokenHash, tokenEnc } = tokenColumns();
   const link = await prisma.shareLink.create({
-    data: { shareId: share.id, token: newToken(), createdById: userId, expiresAt },
+    data: { shareId: share.id, tokenHash, tokenEnc, createdById: userId, expiresAt },
   });
 
   return NextResponse.json({
-    link: { token: link.token, expiresAt: link.expiresAt },
+    link: { token: plain, expiresAt: link.expiresAt },
   });
 }
 
@@ -49,7 +51,9 @@ export async function DELETE(
     where: {
       shareId: params.id,
       share: { userId },
-      ...(typeof token === "string" && token ? { token } : {}),
+      ...(typeof token === "string" && token
+        ? { tokenHash: hashToken(token) }
+        : {}),
       revokedAt: null,
     },
     data: { revokedAt: new Date() },

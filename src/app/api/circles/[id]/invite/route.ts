@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
-import { isMember, newToken } from "@/lib/circles";
+import { isMember, tokenColumns, readToken } from "@/lib/circles";
 
 // Create an invite link. Any member can invite — a circle is a room you chose
 // to be in together, not a hierarchy — but every invite is attributable and
@@ -39,10 +39,12 @@ export async function POST(
     boundEmail = normalized;
   }
 
+  const { plain, tokenHash, tokenEnc } = tokenColumns();
   const invite = await prisma.circleInvite.create({
     data: {
       circleId: params.id,
-      token: newToken(),
+      tokenHash,
+      tokenEnc,
       createdById: userId,
       email: boundEmail,
       expiresAt,
@@ -51,7 +53,7 @@ export async function POST(
 
   return NextResponse.json({
     invite: {
-      token: invite.token,
+      token: plain,
       email: invite.email,
       expiresAt: invite.expiresAt,
     },
@@ -80,7 +82,7 @@ export async function GET(
       .filter((i) => !i.expiresAt || i.expiresAt.getTime() > Date.now())
       .map((i) => ({
         id: i.id,
-        token: i.token,
+        token: readToken(i),
         expiresAt: i.expiresAt,
         createdAt: i.createdAt,
         isYours: i.createdById === userId,

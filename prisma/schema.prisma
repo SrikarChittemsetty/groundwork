@@ -287,11 +287,18 @@ model CircleMember {
 //
 // Either way it is revocable and can expire: handing someone a link is not
 // the same as trusting them indefinitely.
+// The token itself is never stored in the clear. `tokenHash` is a plain
+// SHA-256 of it — deterministic, so a link can still be looked up — and
+// `tokenEnc` is the same token encrypted with the app key so the owner can
+// re-read a link they created. A stolen database file therefore yields no
+// usable invite: the hash can't be reversed and the ciphertext needs a key
+// that isn't in the file. That is the same bargain as everything else here.
 model CircleInvite {
   id          String    @id @default(cuid())
   circleId    String
   circle      Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  token       String    @unique
+  tokenHash   String    @unique
+  tokenEnc    String
   createdById String
   email       String?
   claimedById String?
@@ -368,7 +375,9 @@ model ShareLink {
   id          String    @id @default(cuid())
   shareId     String
   share       Share     @relation(fields: [shareId], references: [id], onDelete: Cascade)
-  token       String    @unique
+  // Hashed for lookup, encrypted for re-display. See CircleInvite.
+  tokenHash   String    @unique
+  tokenEnc    String
   createdById String
   expiresAt   DateTime?
   revokedAt   DateTime?

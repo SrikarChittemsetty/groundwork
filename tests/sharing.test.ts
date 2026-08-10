@@ -3,6 +3,16 @@ import { execSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { hashToken } from "../src/lib/tokens";
+import { encrypt } from "../src/lib/crypto";
+
+// Invite and share-link tokens are stored hashed (for lookup) and encrypted
+// (so the owner can read their own link back) — never in the clear. Tests
+// build both columns from a known token so they can still look rows up.
+const tokenCols = (plain: string) => ({
+  tokenHash: hashToken(plain),
+  tokenEnc: encrypt(plain),
+});
 
 // Sharing is the only path by which one person can read another's writing, so
 // the invariant is no longer "users never see each other's data" — it's "users
@@ -174,38 +184,90 @@ describe("comments", () => {
 describe("invites and links expire the way they claim to", () => {
   it("treats a revoked invite as invalid", async () => {
     const inv = await prisma.circleInvite.create({
-      data: { circleId, token: "tok-revoked", createdById: alice, revokedAt: new Date() },
+      data: {
+        circleId,
+        ...tokenCols("tok-revoked"),
+        createdById: alice,
+        revokedAt: new Date(),
+      },
     });
-    const found = await prisma.circleInvite.findUnique({ where: { token: inv.token } });
+    const found = await prisma.circleInvite.findUnique({
+      where: { tokenHash: hashToken("tok-revoked") },
+    });
+    expect(found?.id).toBe(inv.id);
     expect(found?.revokedAt).not.toBeNull();
   });
 
   it("treats an expired invite as invalid", async () => {
     const past = new Date(Date.now() - 1000);
     const inv = await prisma.circleInvite.create({
-      data: { circleId, token: "tok-expired", createdById: alice, expiresAt: past },
+      data: {
+        circleId,
+        ...tokenCols("tok-expired"),
+        createdById: alice,
+        expiresAt: past,
+      },
     });
     expect(inv.expiresAt!.getTime()).toBeLessThan(Date.now());
   });
 
   it("kills a public link when the share is hidden", async () => {
     const link = await prisma.shareLink.create({
-      data: { shareId: aliceShareId, token: "tok-link", createdById: alice },
+      data: {
+        shareId: aliceShareId,
+        ...tokenCols("tok-link"),
+        createdById: alice,
+      },
     });
     await prisma.share.update({
       where: { id: aliceShareId },
       data: { hiddenAt: new Date() },
     });
     const withShare = await prisma.shareLink.findUnique({
-      where: { token: link.token },
+      where: { tokenHash: hashToken("tok-link") },
       include: { share: true },
     });
+    expect(withShare!.id).toBe(link.id);
     // resolveShareLink() returns null in exactly this case.
     expect(withShare!.share.hiddenAt).not.toBeNull();
     await prisma.share.update({
       where: { id: aliceShareId },
       data: { hiddenAt: null },
     });
+  });
+});
+
+// The privacy page says a stolen database file contains only ciphertext. An
+// invite or share-link token sitting there in the clear would be a plain
+// counterexample: it grants entry to a circle on its own, no key required.
+describe("bearer tokens are not readable from the database", () => {
+  it("stores neither an invite nor a share link in the clear", async () => {
+    const secret = "PLAINTEXT-CANARY-TOKEN";
+    await prisma.circleInvite.create({
+      data: { circleId, ...tokenCols(secret), createdById: alice },
+    });
+    await prisma.shareLink.create({
+      data: { shareId: aliceShareId, ...tokenCols(secret), createdById: alice },
+    });
+
+    const [invite, link] = await Promise.all([
+      prisma.circleInvite.findUnique({ where: { tokenHash: hashToken(secret) } }),
+      prisma.shareLink.findUnique({ where: { tokenHash: hashToken(secret) } }),
+    ]);
+
+    for (const row of [invite!, link!]) {
+      expect(row.tokenHash).not.toContain(secret);
+      expect(row.tokenEnc).not.toContain(secret);
+      // Ciphertext, in the same v1:iv:tag:body form as everything else.
+      expect(row.tokenEnc.startsWith("v1:")).toBe(true);
+    }
+  });
+
+  it("still resolves the token its owner was handed", () => {
+    // Lookup is by hash, so the same token keeps working...
+    expect(hashToken("stable-token")).toBe(hashToken("stable-token"));
+    // ...and a different one doesn't collide with it.
+    expect(hashToken("stable-token")).not.toBe(hashToken("stable-tokes"));
   });
 });
 
@@ -230,7 +292,7 @@ describe("bound invites", () => {
     const inv = await prisma.circleInvite.create({
       data: {
         circleId,
-        token: "tok-claimed",
+        ...tokenCols("tok-claimed"),
         createdById: alice,
         email: "bob@test.local",
         claimedById: bob,
