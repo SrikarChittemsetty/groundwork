@@ -60,6 +60,8 @@ export default function CirclePage() {
   const [loading, setLoading] = useState(true);
   const [gone, setGone] = useState(false);
   const [invite, setInvite] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   async function load() {
@@ -74,16 +76,35 @@ export default function CirclePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  async function makeInvite() {
+  async function makeInvite(e: React.FormEvent) {
+    e.preventDefault();
     const res = await fetch(`/api/circles/${id}/invite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ expiresInDays: 14 }),
+      body: JSON.stringify({
+        expiresInDays: 14,
+        email: inviteEmail.trim() || undefined,
+      }),
     });
     if (res.ok) {
       const data = await res.json();
       setInvite(`${window.location.origin}/join?token=${data.invite.token}`);
     }
+  }
+
+  async function removeMember(memberId: string, email: string) {
+    if (
+      !window.confirm(
+        `Remove ${email} from this circle? Anything they shared here goes with them. Their own private records aren't touched.`
+      )
+    )
+      return;
+    const res = await fetch(`/api/circles/${id}/members`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId }),
+    });
+    if (res.ok) load();
   }
 
   async function comment(shareId: string) {
@@ -135,13 +156,28 @@ export default function CirclePage() {
   return (
     <>
       <h1>{circle.name}</h1>
-      <p className="subtitle">
-        {circle.members.map((m) => (m.isYou ? "you" : m.email)).join(", ")}
-      </p>
+      <div className="chips" style={{ marginBottom: 20 }}>
+        {circle.members.map((m) => (
+          <span key={m.userId} className="chip static">
+            {m.isYou ? "you" : m.email}
+            {m.role === "owner" && " · created it"}
+            {circle.isOwner && !m.isYou && (
+              <button
+                className="chip-x"
+                aria-label={`Remove ${m.email}`}
+                title={`Remove ${m.email}`}
+                onClick={() => removeMember(m.userId, m.email)}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
 
       <div className="row" style={{ marginBottom: 8 }}>
-        <button className="ghost" onClick={makeInvite}>
-          Invite someone
+        <button className="ghost" onClick={() => setInviteOpen((o) => !o)}>
+          {inviteOpen ? "Cancel invite" : "Invite someone"}
         </button>
         <Link href="/share">
           <button className="ghost">Share something here</button>
@@ -152,10 +188,36 @@ export default function CirclePage() {
         </button>
       </div>
 
+      {inviteOpen && (
+        <form onSubmit={makeInvite} className="card-form">
+          <label htmlFor="inviteEmail">
+            Their email — optional, but safer
+          </label>
+          <input
+            id="inviteEmail"
+            type="email"
+            placeholder="sarah@example.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+          />
+          <p className="footnote">
+            With an address, only that person can accept and the link is spent
+            once used — forwarding it gets nobody in. Leave it blank for a plain
+            link anyone holding it can use. Either way it lasts 14 days and you
+            can revoke it.
+          </p>
+          <div style={{ marginTop: 16 }}>
+            <button type="submit">Make the link</button>
+          </div>
+        </form>
+      )}
+
       {invite && (
         <div className="card">
           <div className="footnote" style={{ marginBottom: 8 }}>
-            Send this to one person. It works for 14 days, and you can revoke it.
+            {inviteEmail.trim()
+              ? `Only ${inviteEmail.trim()} can use this, once.`
+              : "Anyone holding this link can join."}
           </div>
           <input type="text" readOnly value={invite} onFocus={(e) => e.target.select()} />
         </div>

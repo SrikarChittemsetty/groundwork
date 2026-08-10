@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
-import { isMember } from "@/lib/circles";
+import { isMember, markRead } from "@/lib/circles";
 
 // The circle itself: who's in it, what's been shared, and the comments.
 //
@@ -46,6 +46,9 @@ export async function GET(
     select: { id: true, email: true },
   });
   const emailFor = new Map(users.map((u) => [u.id, u.email]));
+
+  // Opening the circle is what marks it read.
+  await markRead(circle.id, userId);
 
   return NextResponse.json({
     circle: {

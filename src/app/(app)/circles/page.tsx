@@ -10,6 +10,7 @@ type Circle = {
   memberCount: number;
   shareCount: number;
   isOwner: boolean;
+  unread: number;
   createdAt: string;
 };
 
@@ -106,6 +107,14 @@ export default function CirclesPage() {
             <div className="body-text">
               {c.memberCount} {c.memberCount === 1 ? "person" : "people"} ·{" "}
               {c.shareCount} {c.shareCount === 1 ? "thing" : "things"} shared
+              {c.unread > 0 && (
+                <>
+                  {" · "}
+                  <span className="unread">
+                    {c.unread} new since you looked
+                  </span>
+                </>
+              )}
             </div>
             <div className="card-actions">
               <span className="meta">

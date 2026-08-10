@@ -17,19 +17,44 @@ export async function POST(
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  const { expiresInDays } = await req.json().catch(() => ({}));
+  const { expiresInDays, email } = await req.json().catch(() => ({}));
   let expiresAt: Date | null = null;
   if (typeof expiresInDays === "number" && Number.isFinite(expiresInDays)) {
     const days = Math.max(1, Math.min(365, Math.floor(expiresInDays)));
     expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   }
 
+  // Naming an address makes the invite theirs alone and single-use. Leaving it
+  // blank keeps the old bearer-link behaviour, which is still the right tool
+  // when you just want to text a link to someone.
+  let boundEmail: string | null = null;
+  if (typeof email === "string" && email.trim()) {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes("@")) {
+      return NextResponse.json(
+        { error: "That doesn't look like an email address." },
+        { status: 400 }
+      );
+    }
+    boundEmail = normalized;
+  }
+
   const invite = await prisma.circleInvite.create({
-    data: { circleId: params.id, token: newToken(), createdById: userId, expiresAt },
+    data: {
+      circleId: params.id,
+      token: newToken(),
+      createdById: userId,
+      email: boundEmail,
+      expiresAt,
+    },
   });
 
   return NextResponse.json({
-    invite: { token: invite.token, expiresAt: invite.expiresAt },
+    invite: {
+      token: invite.token,
+      email: invite.email,
+      expiresAt: invite.expiresAt,
+    },
   });
 }
 

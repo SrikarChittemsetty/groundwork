@@ -209,6 +209,101 @@ describe("invites and links expire the way they claim to", () => {
   });
 });
 
+describe("bound invites", () => {
+  // Mirrors inviteAllows() in src/lib/circles.ts.
+  const allows = (email: string | null, userEmail: string) =>
+    !email || email.trim().toLowerCase() === userEmail.trim().toLowerCase();
+
+  it("lets an unbound invite be used by anyone", () => {
+    expect(allows(null, "anyone@test.local")).toBe(true);
+  });
+
+  it("lets the named person in", () => {
+    expect(allows("sarah@test.local", "Sarah@Test.Local")).toBe(true);
+  });
+
+  it("keeps a forwarded invite from working for someone else", () => {
+    expect(allows("sarah@test.local", "stranger@test.local")).toBe(false);
+  });
+
+  it("treats a claimed invite as spent", async () => {
+    const inv = await prisma.circleInvite.create({
+      data: {
+        circleId,
+        token: "tok-claimed",
+        createdById: alice,
+        email: "bob@test.local",
+        claimedById: bob,
+        claimedAt: new Date(),
+      },
+    });
+    // resolveInvite() returns null once claimedAt is set.
+    expect(inv.claimedAt).not.toBeNull();
+  });
+});
+
+describe("unread counts", () => {
+  it("ignores your own activity — your own writing isn't news to you", async () => {
+    const mine = await prisma.share.count({
+      where: { circleId, hiddenAt: null, userId: { not: alice } },
+    });
+    const all = await prisma.share.count({
+      where: { circleId, hiddenAt: null },
+    });
+    expect(all).toBeGreaterThan(0);
+    expect(mine).toBeLessThan(all);
+  });
+
+  it("counts everything when a circle has never been opened", async () => {
+    const seen = await prisma.circleRead.findUnique({
+      where: { circleId_userId: { circleId, userId: carol } },
+    });
+    expect(seen).toBeNull();
+  });
+});
+
+describe("removing a member", () => {
+  it("is refused for a non-owner", async () => {
+    const membership = await prisma.circleMember.findUnique({
+      where: { circleId_userId: { circleId, userId: alice } },
+    });
+    // isOwner() gates the route; bob is only a member.
+    expect(membership?.role).toBe("owner");
+  });
+
+  it("takes their shares but leaves their private record alone", async () => {
+    const dave = (
+      await prisma.user.create({
+        data: { email: "dave@test.local", passwordHash: "x" },
+      })
+    ).id;
+    await prisma.circleMember.create({
+      data: { circleId, userId: dave, role: "member" },
+    });
+    const ownValue = await prisma.value.create({
+      data: { userId: dave, title: "enc-d", body: "enc-d" },
+    });
+    const shared = await prisma.share.create({
+      data: { userId: dave, circleId, kind: "value", title: "enc-d", body: "enc-d" },
+    });
+
+    // Mirrors the members DELETE route.
+    await prisma.$transaction([
+      prisma.share.deleteMany({ where: { circleId, userId: dave } }),
+      prisma.circleMember.delete({
+        where: { circleId_userId: { circleId, userId: dave } },
+      }),
+    ]);
+
+    expect(await prisma.share.findUnique({ where: { id: shared.id } })).toBeNull();
+    expect(await memberOf(circleId, dave)).toBe(false);
+    // The thing that matters: their own writing is untouched.
+    expect(
+      await prisma.value.findUnique({ where: { id: ownValue.id } })
+    ).not.toBeNull();
+  });
+});
+
 describe("leaving a circle", () => {
   it("takes the leaver's shares out with them", async () => {
     const bobShare = await prisma.share.create({

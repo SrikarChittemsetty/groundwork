@@ -747,6 +747,29 @@ button.chip.on:hover:not(:disabled) {
   background: var(--border-strong);
 }
 
+/* Something arrived since you last looked. Deliberately quiet — a fact, not
+   a demand for attention. */
+.unread {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Remove-member affordance inside a member chip */
+.chip-x {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 0 0 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.chip-x:hover:not(:disabled) {
+  color: var(--danger);
+  background: none;
+}
+
 /* --------------------------------------------------------------------------
    Side-by-side value definitions (Circles)
 

@@ -127,6 +127,7 @@ model Circle {
   members   CircleMember[]
   invites   CircleInvite[]
   shares    Share[]
+  reads     CircleRead[]
 
   @@index([ownerId])
 }
@@ -143,20 +144,46 @@ model CircleMember {
   @@index([userId])
 }
 
-// An invite is a bearer token: whoever holds the link can join. Revocable and
-// optionally time-limited, because handing someone a link is not the same as
-// trusting them forever.
+// Invites come in two strengths, because "text this to Sarah" and "post this
+// where several people will see it" are different acts.
+//
+//   - No `email`: a bearer link. Whoever holds it can join, and it keeps
+//     working until it expires or is revoked.
+//   - With `email`: bound to one person and single-use. Only an account with
+//     that address can accept it, and accepting burns it — forwarding the
+//     link to someone else gets them nothing.
+//
+// Either way it is revocable and can expire: handing someone a link is not
+// the same as trusting them indefinitely.
 model CircleInvite {
   id          String    @id @default(cuid())
   circleId    String
   circle      Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
   token       String    @unique
   createdById String
+  email       String?
+  claimedById String?
+  claimedAt   DateTime?
   expiresAt   DateTime?
   revokedAt   DateTime?
   createdAt   DateTime  @default(now())
 
   @@index([circleId])
+}
+
+// Where each person had last read a circle, so "someone replied and you never
+// found out" stops being the default. Deliberately just a timestamp — no read
+// receipts shown to others, no pressure to respond, nothing that turns a
+// conversation into an obligation.
+model CircleRead {
+  id         String   @id @default(cuid())
+  circleId   String
+  circle     Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId     String
+  lastSeenAt DateTime @default(now())
+
+  @@unique([circleId, userId])
+  @@index([userId])
 }
 
 // One shared thing. `kind` is "value" or "decision". All text is ciphertext.

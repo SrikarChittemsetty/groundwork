@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { encrypt, safeDecrypt } from "@/lib/crypto";
-import { circlesFor } from "@/lib/circles";
+import { circlesFor, unreadCount } from "@/lib/circles";
 
 export async function GET() {
   const userId = await getUserId();
@@ -10,16 +10,19 @@ export async function GET() {
 
   const rows = await circlesFor(userId);
 
-  return NextResponse.json({
-    circles: rows.map((c) => ({
+  const circles = await Promise.all(
+    rows.map(async (c) => ({
       id: c.id,
       name: safeDecrypt(c.name),
       memberCount: c.members.length,
       shareCount: c._count.shares,
       isOwner: c.ownerId === userId,
+      unread: await unreadCount(c.id, userId, c.reads[0]?.lastSeenAt ?? null),
       createdAt: c.createdAt,
-    })),
-  });
+    }))
+  );
+
+  return NextResponse.json({ circles });
 }
 
 export async function POST(req: Request) {

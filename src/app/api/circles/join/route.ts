@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
-import { resolveInvite } from "@/lib/circles";
+import { inviteAllows, resolveInvite } from "@/lib/circles";
 
 // Preview an invite before accepting: you should know what room you're being
 // asked into before you're in it. Shows the name and size only — never the
@@ -16,6 +16,22 @@ export async function GET(req: Request) {
 
   const invite = await resolveInvite(token);
   if (!invite) {
+    return NextResponse.json(
+      { error: "That invite link is no longer valid." },
+      { status: 404 }
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (!user) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+  // A bound invite meant for someone else reads as invalid rather than
+  // "valid, but not for you" — there's no reason to confirm to the holder
+  // that a circle exists behind a link they can't use.
+  if (!inviteAllows(invite, user.email)) {
     return NextResponse.json(
       { error: "That invite link is no longer valid." },
       { status: 404 }
@@ -36,6 +52,7 @@ export async function GET(req: Request) {
       name: safeDecrypt(invite.circle.name),
       memberCount,
       alreadyMember: already !== null,
+      boundToYou: invite.email !== null,
     },
   });
 }
@@ -57,13 +74,36 @@ export async function POST(req: Request) {
     );
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (!user || !inviteAllows(invite, user.email)) {
+    return NextResponse.json(
+      { error: "That invite link is no longer valid." },
+      { status: 404 }
+    );
+  }
+
   // Joining twice is a no-op rather than an error — re-clicking a link you
   // already used shouldn't look like a failure.
-  await prisma.circleMember.upsert({
-    where: { circleId_userId: { circleId: invite.circleId, userId } },
-    create: { circleId: invite.circleId, userId, role: "member" },
-    update: {},
-  });
+  await prisma.$transaction([
+    prisma.circleMember.upsert({
+      where: { circleId_userId: { circleId: invite.circleId, userId } },
+      create: { circleId: invite.circleId, userId, role: "member" },
+      update: {},
+    }),
+    // Burn a bound invite. Unbound links stay live until they expire or are
+    // revoked, which is the point of them.
+    ...(invite.email
+      ? [
+          prisma.circleInvite.update({
+            where: { id: invite.id },
+            data: { claimedById: userId, claimedAt: new Date() },
+          }),
+        ]
+      : []),
+  ]);
 
   return NextResponse.json({ ok: true, circleId: invite.circleId });
 }
