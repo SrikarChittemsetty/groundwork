@@ -747,6 +747,50 @@ button.chip.on:hover:not(:disabled) {
 }
 
 /* --------------------------------------------------------------------------
+   Reasoning steps with citations
+
+   A grounded step looks ordinary; an ungrounded one is visually marked, so a
+   premise the model brought with it can never pass as one of yours just by
+   sitting in a tidy list with the rest.
+   -------------------------------------------------------------------------- */
+
+.steps {
+  list-style: none;
+  counter-reset: step;
+  padding: 0;
+  margin: 0;
+}
+.step {
+  counter-increment: step;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px 18px 52px;
+  margin: 12px 0;
+}
+.step::before {
+  content: counter(step);
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-variation-settings: "SOFT" 40, "opsz" 20;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.step.ungrounded {
+  border-color: var(--danger-line);
+  background: var(--danger-dim);
+}
+.step.ungrounded .tag {
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--danger-line);
+}
+
+/* --------------------------------------------------------------------------
    The why-chain
 
    Depth is shown by an indented rail, so how far down you've actually gone is

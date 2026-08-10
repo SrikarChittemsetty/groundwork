@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/patterns", label: "Patterns" },
   { href: "/reflect", label: "Reflect" },
   { href: "/circles", label: "Circles" },
+  { href: "/reason", label: "Reason", ai: true },
   { href: "/ask", label: "Ask", ai: true },
   { href: "/settings", label: "Settings" },
 ];
