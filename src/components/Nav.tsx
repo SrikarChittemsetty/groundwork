@@ -7,6 +7,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 // `ai: true` marks a link that only exists when inference is configured. The
 // rest of the app is complete without them.
 const LINKS = [
+  { href: "/positions", label: "Positions" },
+  { href: "/axioms", label: "Axioms" },
   { href: "/values", label: "Values" },
   { href: "/log", label: "Log a decision" },
   { href: "/timeline", label: "Timeline" },

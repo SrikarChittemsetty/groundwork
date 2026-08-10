@@ -28,6 +28,8 @@ model User {
   decisions     Decision[]
   reflections   Reflection[]
   consultations Consultation[]
+  positions     Position[]
+  axioms        Axiom[]
 }
 
 // Failed sign-in attempts, used to throttle brute-force guessing.
@@ -105,6 +107,72 @@ model DecisionValue {
 
   @@id([decisionId, valueId])
   @@index([valueId])
+  @@index([userId])
+}
+
+// --- Positions, why-chains, axioms -----------------------------------------
+//
+// The interrogation. You state a position; the tool asks why; you answer; it
+// asks why again. It stops when you say there is nothing underneath — and
+// that terminus is an axiom.
+//
+// No model is involved. "Why?" is a question a text file can ask, and the
+// answers have to be yours or the exercise is pointless. What the tool
+// contributes is refusing to let you stop early, and remembering where you
+// landed last time.
+
+model Position {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // The claim being interrogated, e.g. "I should turn down this offer".
+  statement  String
+  createdAt  DateTime     @default(now())
+  // Set when you decide you've reached the bottom of every branch.
+  settledAt  DateTime?
+  nodes      ReasonNode[]
+
+  @@index([userId])
+}
+
+// One link in a chain of reasons: the answer to "why?" asked of its parent.
+// A node with no parent answers the position itself.
+model ReasonNode {
+  id         String       @id @default(cuid())
+  positionId String
+  position   Position     @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  userId     String
+  parentId   String?
+  parent     ReasonNode?  @relation("NodeChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children   ReasonNode[] @relation("NodeChildren")
+  claim      String
+  // Bedrock: you were asked why and had nothing further. The honest end of a
+  // chain, not a failure to think harder.
+  isBedrock  Boolean      @default(false)
+  // Which accumulated axiom this bedrock turned out to be, when you recognise
+  // it as one you've already hit.
+  axiomId    String?
+  axiom      Axiom?       @relation(fields: [axiomId], references: [id], onDelete: SetNull)
+  createdAt  DateTime     @default(now())
+
+  @@index([positionId])
+  @@index([parentId])
+  @@index([axiomId])
+}
+
+// Something you hold with no reason underneath it.
+//
+// Axioms accumulate across positions on purpose: the discovery that ten
+// different arguments all bottom out in the same three commitments is the
+// most useful thing this tool can show you.
+model Axiom {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statement  String
+  createdAt  DateTime     @default(now())
+  nodes      ReasonNode[]
+
   @@index([userId])
 }
 

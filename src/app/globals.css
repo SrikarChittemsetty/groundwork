@@ -230,16 +230,15 @@ a:hover {
   white-space: nowrap;
 }
 
+/* Ten destinations is more than one row holds. Wrapping beats a scroller that
+   hides half of them behind a gesture nobody knows is there. */
 .nav {
   display: flex;
   gap: 1px;
   align-items: center;
+  flex-wrap: wrap;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.nav::-webkit-scrollbar {
-  display: none;
+  row-gap: 2px;
 }
 
 .nav a {
@@ -745,6 +744,61 @@ button.chip.on:hover:not(:disabled) {
   height: 5px;
   border-radius: 50%;
   background: var(--border-strong);
+}
+
+/* --------------------------------------------------------------------------
+   The why-chain
+
+   Depth is shown by an indented rail, so how far down you've actually gone is
+   visible at a glance. A chain that stopped after one "because" looks short,
+   which is the honest thing for it to look like.
+   -------------------------------------------------------------------------- */
+
+.why-tree {
+  margin-top: 8px;
+}
+.why-node {
+  position: relative;
+  padding-left: 18px;
+  border-left: 1px solid var(--border-strong);
+  margin-top: 14px;
+}
+.why-node::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 16px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--border-strong);
+}
+.why-claim {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+/* Bedrock reads as arrival, not as a dead end. */
+.why-claim.bedrock {
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.why-ask {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-strong);
+}
+.why-ask label {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+  font-variation-settings: "SOFT" 40, "opsz" 20;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  margin-top: 0;
 }
 
 /* Something arrived since you last looked. Deliberately quiet — a fact, not
