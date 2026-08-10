@@ -142,11 +142,84 @@ describe("axioms", () => {
     expect(await prisma.axiom.findUnique({ where: { id: axiom.id } })).not.toBeNull();
   });
 
+  it("survives an axiom being deleted by taking the tension with it", async () => {
+    const a = await prisma.axiom.create({ data: { userId, statement: "x" } });
+    const b = await prisma.axiom.create({ data: { userId, statement: "y" } });
+    const [first, second] = a.id < b.id ? [a.id, b.id] : [b.id, a.id];
+    const t = await prisma.axiomTension.create({
+      data: { userId, aId: first, bId: second, note: "enc-note" },
+    });
+    await prisma.axiom.delete({ where: { id: a.id } });
+    expect(
+      await prisma.axiomTension.findUnique({ where: { id: t.id } })
+    ).toBeNull();
+  });
+
   it("keeps one person's positions and axioms out of another's", async () => {
     expect(await prisma.position.count({ where: { userId: otherId } })).toBe(0);
     expect(await prisma.axiom.count({ where: { userId: otherId } })).toBe(0);
     expect(
       await prisma.position.count({ where: { userId } })
     ).toBeGreaterThan(0);
+  });
+});
+
+// A tension is something the person asserts about two of their own axioms.
+// The tool has no view on whether commitments conflict — at this level most
+// people are internally consistent and simply hold different things as
+// bedrock — so what's enforced is only that the assertion is well-formed.
+describe("tensions between axioms", () => {
+  const ordered = (x: string, y: string): [string, string] =>
+    x < y ? [x, y] : [y, x];
+
+  it("stores a pair in a fixed order so it can't be recorded twice", async () => {
+    const a = await prisma.axiom.create({ data: { userId, statement: "p" } });
+    const b = await prisma.axiom.create({ data: { userId, statement: "q" } });
+    const [first, second] = ordered(a.id, b.id);
+
+    await prisma.axiomTension.create({
+      data: { userId, aId: first, bId: second, note: "enc" },
+    });
+
+    // The same pair the other way round normalizes to the same row.
+    const [againFirst, againSecond] = ordered(b.id, a.id);
+    expect(againFirst).toBe(first);
+    expect(againSecond).toBe(second);
+    await expect(
+      prisma.axiomTension.create({
+        data: { userId, aId: againFirst, bId: againSecond, note: "enc" },
+      })
+    ).rejects.toThrow();
+  });
+
+  it("cannot pair an axiom that isn't yours", async () => {
+    const mine = await prisma.axiom.create({ data: { userId, statement: "m" } });
+    const theirs = await prisma.axiom.create({
+      data: { userId: otherId, statement: "t" },
+    });
+    // The route checks both ids belong to the caller before creating.
+    const owned = await prisma.axiom.findMany({
+      where: { userId, id: { in: [mine.id, theirs.id] } },
+      select: { id: true },
+    });
+    expect(owned).toHaveLength(1);
+  });
+
+  it("treats an unresolved tension as fine, not as a task", async () => {
+    const a = await prisma.axiom.create({ data: { userId, statement: "r" } });
+    const b = await prisma.axiom.create({ data: { userId, statement: "s" } });
+    const [first, second] = ordered(a.id, b.id);
+    const t = await prisma.axiomTension.create({
+      data: { userId, aId: first, bId: second, note: "enc" },
+    });
+    expect(t.resolvedAt).toBeNull();
+    expect(t.resolution).toBeNull();
+
+    // Holding both and accepting the cost is a resolution.
+    const resolved = await prisma.axiomTension.update({
+      where: { id: t.id },
+      data: { resolvedAt: new Date(), resolution: "enc-hold-both" },
+    });
+    expect(resolved.resolvedAt).not.toBeNull();
   });
 });

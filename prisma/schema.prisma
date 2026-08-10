@@ -30,7 +30,13 @@ model User {
   consultations Consultation[]
   positions     Position[]
   axioms        Axiom[]
+  tensions      AxiomTension[]
   resets        PasswordReset[]
+  ownedCircles  Circle[]        @relation("CircleOwner")
+  memberships   CircleMember[]
+  circleReads   CircleRead[]
+  shares        Share[]
+  shareComments ShareComment[]
 }
 
 // Failed sign-in attempts, used to throttle brute-force guessing.
@@ -194,7 +200,38 @@ model Axiom {
   statement  String
   createdAt  DateTime     @default(now())
   nodes      ReasonNode[]
+  tensionsA  AxiomTension[] @relation("TensionA")
+  tensionsB  AxiomTension[] @relation("TensionB")
 
+  @@index([userId])
+}
+
+// Two of your axioms that pull against each other.
+//
+// Deliberately something YOU assert, never something the tool detects. Two
+// commitments in tension is not a defect to be flagged and repaired — at the
+// level where axioms live, most people are internally consistent and simply
+// hold different things as bedrock. A tool that announced "these contradict"
+// would be handing down exactly the verdict this whole thing refuses to make.
+//
+// It also isn't a task list. `resolvedAt` records that you came to a view, and
+// "I hold both and accept the cost" is as legitimate a resolution as dropping
+// one. An unresolved tension you've simply looked at squarely is fine.
+model AxiomTension {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Stored with aId < bId so a pair can't be recorded twice in two orders.
+  aId        String
+  a          Axiom     @relation("TensionA", fields: [aId], references: [id], onDelete: Cascade)
+  bId        String
+  b          Axiom     @relation("TensionB", fields: [bId], references: [id], onDelete: Cascade)
+  note       String
+  resolution String?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([aId, bId])
   @@index([userId])
 }
 
@@ -213,6 +250,10 @@ model Circle {
   id        String         @id @default(cuid())
   name      String
   ownerId   String
+  // Deleting your account deletes rooms you created. There is no owner left
+  // to manage them, and the alternative — an ownerless room still holding
+  // your shared writing — is exactly what "delete everything" must not mean.
+  owner     User           @relation("CircleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt DateTime       @default(now())
   members   CircleMember[]
   invites   CircleInvite[]
@@ -227,6 +268,7 @@ model CircleMember {
   circleId String
   circle   Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
   userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role     String   @default("member")
   joinedAt DateTime @default(now())
 
@@ -270,6 +312,7 @@ model CircleRead {
   circleId   String
   circle     Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
   userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lastSeenAt DateTime @default(now())
 
   @@unique([circleId, userId])
@@ -280,6 +323,7 @@ model CircleRead {
 model Share {
   id         String    @id @default(cuid())
   userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   circleId   String?
   circle     Circle?   @relation(fields: [circleId], references: [id], onDelete: Cascade)
   kind       String
@@ -310,6 +354,7 @@ model ShareComment {
   shareId   String
   share     Share     @relation(fields: [shareId], references: [id], onDelete: Cascade)
   userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   body      String
   createdAt DateTime  @default(now())
   deletedAt DateTime?

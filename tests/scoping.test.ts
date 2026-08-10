@@ -93,6 +93,80 @@ describe("per-user scoping", () => {
 });
 
 describe("account deletion", () => {
+  // Regression: shares, comments, circle memberships, read markers, and
+  // circles you created all used to survive account deletion, because they
+  // carried a userId with no relation behind it. Deleting your account left
+  // your shared writing sitting in other people's circles — the precise
+  // opposite of what "delete everything" promises.
+  it("leaves nothing behind anywhere, including shared copies", async () => {
+    const doomed = await prisma.user.create({
+      data: { email: "cascade@test.local", passwordHash: "x" },
+    });
+    const bystander = await prisma.user.create({
+      data: { email: "bystander@test.local", passwordHash: "x" },
+    });
+
+    const circle = await prisma.circle.create({
+      data: {
+        name: "enc",
+        ownerId: doomed.id,
+        members: {
+          create: [
+            { userId: doomed.id, role: "owner" },
+            { userId: bystander.id },
+          ],
+        },
+      },
+    });
+    const share = await prisma.share.create({
+      data: { userId: doomed.id, circleId: circle.id, kind: "value", body: "enc" },
+    });
+    await prisma.shareComment.create({
+      data: { shareId: share.id, userId: doomed.id, body: "enc" },
+    });
+    await prisma.circleRead.create({
+      data: { circleId: circle.id, userId: doomed.id },
+    });
+    await prisma.position.create({
+      data: {
+        userId: doomed.id,
+        statement: "enc",
+        nodes: { create: [{ userId: doomed.id, claim: "enc" }] },
+      },
+    });
+    await prisma.axiom.create({ data: { userId: doomed.id, statement: "enc" } });
+    await prisma.passwordReset.create({
+      data: {
+        userId: doomed.id,
+        tokenHash: "cascade-hash",
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+
+    await prisma.user.delete({ where: { id: doomed.id } });
+
+    expect(await prisma.share.count({ where: { userId: doomed.id } })).toBe(0);
+    expect(
+      await prisma.shareComment.count({ where: { userId: doomed.id } })
+    ).toBe(0);
+    expect(
+      await prisma.circleMember.count({ where: { userId: doomed.id } })
+    ).toBe(0);
+    expect(await prisma.circleRead.count({ where: { userId: doomed.id } })).toBe(0);
+    expect(await prisma.circle.count({ where: { id: circle.id } })).toBe(0);
+    expect(await prisma.position.count({ where: { userId: doomed.id } })).toBe(0);
+    expect(await prisma.reasonNode.count({ where: { userId: doomed.id } })).toBe(0);
+    expect(await prisma.axiom.count({ where: { userId: doomed.id } })).toBe(0);
+    expect(
+      await prisma.passwordReset.count({ where: { userId: doomed.id } })
+    ).toBe(0);
+
+    // The bystander's own account survives; only the shared room went.
+    expect(
+      await prisma.user.findUnique({ where: { id: bystander.id } })
+    ).not.toBeNull();
+  });
+
   it("cascades to every table holding personal data", async () => {
     const doomed = await prisma.user.create({
       data: { email: "doomed@test.local", passwordHash: "x" },
