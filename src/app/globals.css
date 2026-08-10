@@ -37,6 +37,13 @@
   --revised-dim: rgba(201, 165, 255, 0.13);
   --decision-hue: #6fd4a8;
   --decision-dim: rgba(111, 212, 168, 0.12);
+  /* The interrogation. A position and the axiom under it share a hue because
+     they're two ends of the same act; the dot is hollow while the question is
+     still open and filled once it reaches bedrock. */
+  --reason-hue: #e0b25c;
+  --reason-dim: rgba(224, 178, 92, 0.13);
+  --tension-hue: #f0908c;
+  --tension-dim: rgba(240, 144, 140, 0.12);
 
   --danger: #ff7a7a;
   --danger-dim: rgba(255, 122, 122, 0.12);
@@ -101,6 +108,10 @@
   --revised-dim: rgba(123, 63, 196, 0.1);
   --decision-hue: #12795a;
   --decision-dim: rgba(18, 121, 90, 0.1);
+  --reason-hue: #96650a;
+  --reason-dim: rgba(150, 101, 10, 0.1);
+  --tension-hue: #b8443f;
+  --tension-dim: rgba(184, 68, 63, 0.09);
 
   --danger: #c02a2a;
   --danger-dim: rgba(192, 42, 42, 0.08);
@@ -592,6 +603,15 @@ button.chip.on:hover:not(:disabled) {
   color: var(--decision-hue);
   background: var(--decision-dim);
 }
+.tag.position,
+.tag.axiom {
+  color: var(--reason-hue);
+  background: var(--reason-dim);
+}
+.tag.tension {
+  color: var(--tension-hue);
+  background: var(--tension-dim);
+}
 
 /* --------------------------------------------------------------------------
    Timeline — the signature view
@@ -679,6 +699,20 @@ button.chip.on:hover:not(:disabled) {
   border-radius: 2px;
 }
 
+.tl-entry.is-position::before {
+  border-color: var(--reason-hue);
+  background: var(--bg);
+}
+.tl-entry.is-axiom::before {
+  border-color: var(--reason-hue);
+  background: var(--reason-hue);
+}
+.tl-entry.is-tension::before {
+  border-color: var(--tension-hue);
+  background: var(--bg);
+  transform: rotate(45deg);
+}
+
 .tl-head {
   display: flex;
   align-items: center;
@@ -692,7 +726,10 @@ button.chip.on:hover:not(:disabled) {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Fits however many counts there are rather than assuming three — the
+     timeline gained positions and axioms and a fixed 3-column grid left the
+     last row half empty. */
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 10px;
   margin: 4px 0 28px;
 }

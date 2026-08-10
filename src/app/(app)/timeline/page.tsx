@@ -19,7 +19,67 @@ type Item =
       body: string;
       at: string;
       linkedValues: string[];
+    }
+  | {
+      kind: "position";
+      id: string;
+      body: string;
+      at: string;
+      event: "opened" | "settled";
+    }
+  | {
+      kind: "axiom";
+      id: string;
+      body: string;
+      at: string;
+      event: "reached" | "reworded" | "retired";
+      previously?: string;
+    }
+  | {
+      kind: "tension";
+      id: string;
+      body: string;
+      at: string;
+      between: [string, string];
+      event: "noted" | "resolved";
     };
+
+// What each entry is called in the feed. Kept in one place because the label
+// is the only thing distinguishing several of these at a glance.
+function label(it: Item): string {
+  switch (it.kind) {
+    case "value":
+      return it.revised ? "Reworded" : "Value stated";
+    case "decision":
+      return "Decision";
+    case "position":
+      return it.event === "opened" ? "Position taken apart" : "Settled";
+    case "axiom":
+      return it.event === "reached"
+        ? "Bedrock reached"
+        : it.event === "reworded"
+          ? "Axiom reworded"
+          : "No longer held";
+    case "tension":
+      return it.event === "noted" ? "Tension noted" : "Tension resolved";
+  }
+}
+
+// Which dot the entry gets on the rail.
+function nodeClass(it: Item): string {
+  switch (it.kind) {
+    case "value":
+      return it.revised ? "is-revised" : "is-value";
+    case "decision":
+      return "is-decision";
+    case "position":
+      return "is-position";
+    case "axiom":
+      return it.event === "reached" ? "is-axiom" : "is-revised";
+    case "tension":
+      return "is-tension";
+  }
+}
 
 function monthLabel(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -40,7 +100,9 @@ function groupByMonth(items: Item[]): { month: string; items: Item[] }[] {
   return groups;
 }
 
-type Filter = "all" | "values" | "decisions";
+type Filter = "all" | "reasoning" | "values" | "decisions";
+
+const REASONING = new Set(["position", "axiom", "tension"]);
 
 export default function TimelinePage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -65,13 +127,21 @@ export default function TimelinePage() {
   ).size;
   const revisions = items.filter((i) => i.kind === "value" && i.revised).length;
   const decisions = items.filter((i) => i.kind === "decision").length;
+  const positions = items.filter(
+    (i) => i.kind === "position" && i.event === "opened"
+  ).length;
+  const axioms = items.filter(
+    (i) => i.kind === "axiom" && i.event === "reached"
+  ).length;
 
   const visible = items.filter((i) =>
     filter === "all"
       ? true
-      : filter === "values"
-        ? i.kind === "value"
-        : i.kind === "decision"
+      : filter === "reasoning"
+        ? REASONING.has(i.kind)
+        : filter === "values"
+          ? i.kind === "value"
+          : i.kind === "decision"
   );
 
   const groups = groupByMonth(visible);
@@ -80,8 +150,10 @@ export default function TimelinePage() {
     <>
       <h1>Timeline</h1>
       <p className="subtitle">
-        Your values and decisions laid out plainly, newest first. This is your
-        history to interpret — the tool doesn&apos;t judge it for you.
+        Everything you&apos;ve done here, newest first: positions taken apart,
+        bedrock reached, axioms reworded or dropped, values stated and
+        reworded, decisions logged. This is your history to interpret — the
+        tool doesn&apos;t judge it for you.
       </p>
 
       {loading ? (
@@ -96,11 +168,13 @@ export default function TimelinePage() {
             <strong>Your timeline is empty.</strong>
           </p>
           <p className="notice">
-            It fills in as you go: every value you state (and every time you
-            reword one) and every decision you log, in the order they happened.
+            It fills in as you go: every position you take apart, every place
+            the asking stopped, every value you state or reword, and every
+            decision you log — in the order they happened.
           </p>
           <p className="notice">
-            <Link href="/values">Write a value</Link> or{" "}
+            <Link href="/positions">Take a position apart</Link>,{" "}
+            <Link href="/values">write a value</Link>, or{" "}
             <Link href="/log">log a decision</Link> to start it.
           </p>
         </div>
@@ -126,6 +200,18 @@ export default function TimelinePage() {
                 {decisions === 1 ? "Decision" : "Decisions"}
               </div>
             </div>
+            <div className="stat">
+              <div className="stat-num">{positions}</div>
+              <div className="stat-label">
+                {positions === 1 ? "Position" : "Positions"}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-num">{axioms}</div>
+              <div className="stat-label">
+                {axioms === 1 ? "Axiom" : "Axioms"}
+              </div>
+            </div>
           </div>
 
           <div
@@ -137,8 +223,9 @@ export default function TimelinePage() {
             {(
               [
                 ["all", "Everything"],
-                ["values", "Values only"],
-                ["decisions", "Decisions only"],
+                ["reasoning", "Reasoning"],
+                ["values", "Values"],
+                ["decisions", "Decisions"],
               ] as [Filter, string][]
             ).map(([key, label]) => (
               <button
@@ -165,65 +252,104 @@ export default function TimelinePage() {
             {groups.map((group) => (
               <div key={group.month}>
                 <div className="tl-month">{group.month}</div>
-                {group.items.map((it) => {
-                  const nodeClass =
-                    it.kind === "decision"
-                      ? "is-decision"
-                      : it.revised
-                        ? "is-revised"
-                        : "is-value";
-                  return (
-                    <div
-                      key={`${it.kind}-${it.id}`}
-                      className={`tl-entry ${nodeClass}`}
-                    >
-                      <div className="card interactive">
-                        <div className="tl-head">
-                          <span
-                            className={`tag ${it.kind}${
-                              it.kind === "value" && it.revised
-                                ? " revised"
-                                : ""
-                            }`}
-                          >
-                            {it.kind === "value"
-                              ? it.revised
-                                ? "Reworded"
-                                : "Value stated"
-                              : "Decision"}
-                          </span>
-                          <span className="meta">{formatDate(it.at)}</span>
-                        </div>
-
-                        {it.kind === "value" ? (
-                          <>
-                            <div className="title">{it.title}</div>
-                            <div className="body-text">{it.body}</div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="body-text">{it.body}</div>
-                            {it.linkedValues?.length > 0 && (
-                              <div className="chips" style={{ marginTop: 12 }}>
-                                <span
-                                  className="footnote"
-                                  style={{ margin: 0, marginRight: 2 }}
-                                >
-                                  Bears on
-                                </span>
-                                {it.linkedValues.map((t, i) => (
-                                  <span key={i} className="chip static">
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
+                {group.items.map((it) => (
+                  <div
+                    key={`${it.kind}-${it.id}`}
+                    className={`tl-entry ${nodeClass(it)}`}
+                  >
+                    <div className="card interactive">
+                      <div className="tl-head">
+                        <span
+                          className={`tag ${it.kind}${
+                            it.kind === "value" && it.revised ? " revised" : ""
+                          }${
+                            it.kind === "axiom" && it.event !== "reached"
+                              ? " revised"
+                              : ""
+                          }`}
+                        >
+                          {label(it)}
+                        </span>
+                        <span className="meta">{formatDate(it.at)}</span>
                       </div>
+
+                      {it.kind === "value" && (
+                        <>
+                          <div className="title">{it.title}</div>
+                          <div className="body-text">{it.body}</div>
+                        </>
+                      )}
+
+                      {it.kind === "decision" && (
+                        <>
+                          <div className="body-text">{it.body}</div>
+                          {it.linkedValues.length > 0 && (
+                            <div className="chips" style={{ marginTop: 12 }}>
+                              <span
+                                className="footnote"
+                                style={{ margin: 0, marginRight: 2 }}
+                              >
+                                Bears on
+                              </span>
+                              {it.linkedValues.map((t, i) => (
+                                <span key={i} className="chip static">
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {it.kind === "position" && (
+                        <>
+                          <div className="title">
+                            <Link href={`/positions/${it.id.split("-")[0]}`}>
+                              {it.body}
+                            </Link>
+                          </div>
+                          <div className="footnote">
+                            {it.event === "opened"
+                              ? "Started asking why of it."
+                              : "Every branch reached something with nothing underneath it."}
+                          </div>
+                        </>
+                      )}
+
+                      {it.kind === "axiom" && (
+                        <>
+                          <div className="title">{it.body}</div>
+                          {it.event === "reworded" && it.previously && (
+                            <div className="body-text shifted">
+                              Previously: &ldquo;{it.previously}&rdquo;
+                            </div>
+                          )}
+                          {it.event === "retired" && (
+                            <div className="footnote">
+                              You stopped holding this. What rests on it is
+                              flagged on <Link href="/positions">Positions</Link>.
+                            </div>
+                          )}
+                          {it.event === "reached" && (
+                            <div className="footnote">
+                              A place the asking stopped.
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {it.kind === "tension" && (
+                        <>
+                          <div className="footnote">
+                            Between &ldquo;{it.between[0]}&rdquo; and &ldquo;
+                            {it.between[1]}&rdquo;
+                          </div>
+                          <div className="body-text">{it.body}</div>
+                        </>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
