@@ -135,6 +135,24 @@ beforeAll(async () => {
   await prisma.shareComment.create({
     data: { shareId: share.id, userId, body: e("MARK-comment") },
   });
+  await prisma.share.create({
+    data: {
+      userId,
+      circleId: circle.id,
+      kind: "position",
+      title: e("MARK-shared-position"),
+      chain: e(
+        JSON.stringify([
+          {
+            claim: "MARK-shared-reason",
+            parent: null,
+            isBedrock: true,
+            axiom: "MARK-shared-axiom",
+          },
+        ])
+      ),
+    },
+  });
 
   // Someone else's writing, in a circle we're both in. Must NOT be exported.
   await prisma.shareComment.create({
@@ -177,6 +195,9 @@ describe("the export is actually complete", () => {
     "MARK-share-body",
     "MARK-share-note",
     "MARK-comment",
+    "MARK-shared-position",
+    "MARK-shared-reason",
+    "MARK-shared-axiom",
   ];
 
   it("includes every kind of entry you can create", () => {

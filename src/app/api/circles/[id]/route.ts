@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
+import { parseChain } from "@/lib/sharedChain";
 import { isMember, markRead } from "@/lib/circles";
 
 // The circle itself: who's in it, what's been shared, and the comments.
@@ -70,6 +71,9 @@ export async function GET(
         // Respect the sharer's per-share choices on the way out, so a field
         // they excluded never reaches another member's browser at all.
         body: s.showBody && s.body ? safeDecrypt(s.body) : null,
+        // Parsed here rather than in the browser: the chain is ciphertext, and
+        // the sharer's showChain choice decides whether it leaves the server.
+        chain: s.showChain ? parseChain(s.chain) : [],
         note: s.showNote && s.note ? safeDecrypt(s.note) : null,
         occurredAt: s.occurredAt,
         createdAt: s.createdAt,

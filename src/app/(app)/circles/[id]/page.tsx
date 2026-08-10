@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate, formatDateTime } from "@/lib/format";
+import SharedArgument from "@/components/SharedArgument";
+import type { SharedNode } from "@/lib/sharedChain";
 
 type Comment = {
   id: string;
@@ -20,6 +22,7 @@ type Share = {
   author: string;
   title: string | null;
   body: string | null;
+  chain: SharedNode[];
   note: string | null;
   occurredAt: string | null;
   createdAt: string;
@@ -271,8 +274,12 @@ export default function CirclePage() {
         circle.shares.map((s) => (
           <article key={s.id} className="card interactive">
             <div className="chips" style={{ marginBottom: 12 }}>
-              <span className={`tag ${s.kind === "value" ? "value" : "decision"}`}>
-                {s.kind === "value" ? "Value" : "Decision"}
+              <span className={`tag ${s.kind}`}>
+                {s.kind === "value"
+                  ? "Value"
+                  : s.kind === "position"
+                    ? "Position"
+                    : "Decision"}
               </span>
               <span className="meta">
                 {s.isYours ? "You" : s.author}
@@ -282,6 +289,7 @@ export default function CirclePage() {
 
             {s.title && <div className="title">{s.title}</div>}
             {s.body && <div className="body-text">{s.body}</div>}
+            {s.kind === "position" && <SharedArgument nodes={s.chain} />}
             {s.note && (
               <>
                 <hr />

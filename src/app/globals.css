@@ -1334,3 +1334,35 @@ select:focus {
   text-transform: uppercase;
   color: var(--text-muted);
 }
+
+/* A shared argument
+   ---------------------------------------------------------------------------
+   Nested lists rather than the private view's timeline rail: this is someone
+   else's reasoning being read, not yours being worked on, and the indent is
+   enough to carry "this answers the thing above it." */
+.shared-chain {
+  list-style: none;
+  margin: 8px 0 0;
+  padding-left: 0;
+}
+
+.shared-chain .shared-chain {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border-strong);
+}
+
+.shared-chain li {
+  margin-top: 10px;
+}
+
+.shared-claim {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.shared-bedrock {
+  margin-top: 3px;
+  color: var(--reason-hue);
+}

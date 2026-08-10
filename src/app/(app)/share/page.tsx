@@ -5,6 +5,12 @@ import Link from "next/link";
 import { formatDate } from "@/lib/format";
 
 type Value = { id: string; title: string; body: string };
+type Position = {
+  id: string;
+  statement: string;
+  steps: number;
+  settled: boolean;
+};
 type Decision = { id: string; body: string; occurredAt: string };
 type Circle = { id: string; name: string };
 type Share = {
@@ -25,27 +31,37 @@ type Share = {
 export default function SharePage() {
   const [values, setValues] = useState<Value[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [shares, setShares] = useState<Share[]>([]);
 
-  const [pick, setPick] = useState<{ kind: "value" | "decision"; id: string } | null>(null);
+  const [pick, setPick] = useState<{
+    kind: "value" | "decision" | "position";
+    id: string;
+  } | null>(null);
   const [circleId, setCircleId] = useState<string>("");
   const [note, setNote] = useState("");
   const [showBody, setShowBody] = useState(true);
   const [showNote, setShowNote] = useState(true);
+  // Only meaningful for a position. Kept separate because naming your bedrock
+  // is a bigger step than showing the argument that reaches it.
+  const [showChain, setShowChain] = useState(true);
+  const [showAxioms, setShowAxioms] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [v, d, c, s] = await Promise.all([
+    const [v, d, c, s, p] = await Promise.all([
       fetch("/api/values"),
       fetch("/api/decisions"),
       fetch("/api/circles"),
       fetch("/api/shares"),
+      fetch("/api/positions"),
     ]);
     if (v.ok) setValues((await v.json()).values);
     if (d.ok) setDecisions((await d.json()).decisions);
+    if (p.ok) setPositions((await p.json()).positions);
     if (c.ok) setCircles((await c.json()).circles);
     if (s.ok) setShares((await s.json()).shares);
     setLoading(false);
@@ -69,6 +85,8 @@ export default function SharePage() {
         circleId: circleId || null,
         note,
         showBody,
+        showChain,
+        showAxioms,
         showNote,
       }),
     });
@@ -128,6 +146,18 @@ export default function SharePage() {
       <form onSubmit={submit} className="card-form">
         <label>What are you sharing?</label>
         <div className="chips">
+          {positions.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`chip${pick?.kind === "position" && pick.id === p.id ? " on" : ""}`}
+              onClick={() => setPick({ kind: "position", id: p.id })}
+              title={`${p.steps} ${p.steps === 1 ? "step" : "steps"}`}
+            >
+              {p.statement.slice(0, 40)}
+              {p.statement.length > 40 ? "…" : ""}
+            </button>
+          ))}
           {values.map((v) => (
             <button
               key={v.id}
@@ -150,12 +180,16 @@ export default function SharePage() {
             </button>
           ))}
         </div>
-        {values.length === 0 && decisions.length === 0 && (
-          <p className="footnote">
-            Nothing to share yet — write a <Link href="/values">value</Link> or
-            log a <Link href="/log">decision</Link> first.
-          </p>
-        )}
+        {values.length === 0 &&
+          decisions.length === 0 &&
+          positions.length === 0 && (
+            <p className="footnote">
+              Nothing to share yet — take a{" "}
+              <Link href="/positions">position</Link> apart, write a{" "}
+              <Link href="/values">value</Link>, or log a{" "}
+              <Link href="/log">decision</Link> first.
+            </p>
+          )}
 
         <label htmlFor="circle">Where?</label>
         <select
@@ -181,14 +215,37 @@ export default function SharePage() {
 
         <label>What should they see?</label>
         <div className="chips">
-          <button
-            type="button"
-            className={`chip${showBody ? " on" : ""}`}
-            aria-pressed={showBody}
-            onClick={() => setShowBody((s) => !s)}
-          >
-            {pick?.kind === "decision" ? "The decision itself" : "How you define it"}
-          </button>
+          {pick?.kind === "position" ? (
+            <>
+              <button
+                type="button"
+                className={`chip${showChain ? " on" : ""}`}
+                aria-pressed={showChain}
+                onClick={() => setShowChain((s) => !s)}
+              >
+                Your reasoning
+              </button>
+              <button
+                type="button"
+                className={`chip${showAxioms ? " on" : ""}`}
+                aria-pressed={showAxioms}
+                onClick={() => setShowAxioms((s) => !s)}
+              >
+                What it bottoms out in
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className={`chip${showBody ? " on" : ""}`}
+              aria-pressed={showBody}
+              onClick={() => setShowBody((s) => !s)}
+            >
+              {pick?.kind === "decision"
+                ? "The decision itself"
+                : "How you define it"}
+            </button>
+          )}
           <button
             type="button"
             className={`chip${showNote ? " on" : ""}`}
@@ -199,8 +256,16 @@ export default function SharePage() {
           </button>
         </div>
         <p className="footnote">
-          Anything you leave off never reaches them at all. You can change your
-          mind later, or hide the whole thing.
+          Anything you leave off never reaches them at all — it isn&apos;t
+          hidden at their end, it was never sent. You can change your mind
+          later, or hide the whole thing.
+          {pick?.kind === "position" && !showAxioms && (
+            <>
+              {" "}
+              With the last one off they see the argument but not the
+              commitments underneath it.
+            </>
+          )}
         </p>
 
         <div aria-live="polite">{error && <div className="error">{error}</div>}</div>

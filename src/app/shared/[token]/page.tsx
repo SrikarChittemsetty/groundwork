@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { resolveShareLink } from "@/lib/circles";
 import { safeDecrypt } from "@/lib/crypto";
+import SharedArgument from "@/components/SharedArgument";
+import { parseChain } from "@/lib/sharedChain";
 import { formatDate } from "@/lib/format";
 
 export const metadata = {
@@ -33,6 +35,7 @@ export default async function SharedPage({
 
   const share = link.share;
   const isValue = share.kind === "value";
+  const isPosition = share.kind === "position";
   const title = share.title ? safeDecrypt(share.title) : null;
   const body = share.showBody && share.body ? safeDecrypt(share.body) : null;
   const note = share.showNote && share.note ? safeDecrypt(share.note) : null;
@@ -42,7 +45,13 @@ export default async function SharedPage({
       <p className="footnote" style={{ marginTop: 32 }}>
         Someone shared this with you deliberately.
       </p>
-      <h1>{isValue ? "A value, as they define it" : "A decision they made"}</h1>
+      <h1>
+        {isPosition
+          ? "A position, and why they hold it"
+          : isValue
+            ? "A value, as they define it"
+            : "A decision they made"}
+      </h1>
       <p className="subtitle">
         This is one thing they chose to show you — not their journal, and not
         anything else they&apos;ve written.
@@ -50,8 +59,16 @@ export default async function SharedPage({
 
       <article className="card">
         <div className="chips" style={{ marginBottom: 14 }}>
-          <span className={`tag ${isValue ? "value" : "decision"}`}>
-            {isValue ? "Their value" : "Their decision"}
+          <span
+            className={`tag ${
+              isPosition ? "position" : isValue ? "value" : "decision"
+            }`}
+          >
+            {isPosition
+              ? "Their position"
+              : isValue
+                ? "Their value"
+                : "Their decision"}
           </span>
           {share.occurredAt && (
             <span className="meta">{formatDate(share.occurredAt)}</span>
@@ -60,6 +77,9 @@ export default async function SharedPage({
 
         {title && <div className="title">{title}</div>}
         {body && <div className="body-text">{body}</div>}
+        {isPosition && share.showChain && (
+          <SharedArgument nodes={parseChain(share.chain)} />
+        )}
 
         {note && (
           <>

@@ -142,6 +142,16 @@ page tells the truth about which mode you're in.
   mock output so the full loop is demoable. In production a missing key fails
   loudly instead.
 
+### One dev-server gotcha
+
+`next dev` holds the generated Prisma client in its module graph, so after any
+`prisma generate` — which `prisma db push` runs unless you pass
+`--skip-generate` — **restart the dev server**. Otherwise routes 500 with
+"Unknown field" on a column that plainly exists, while `npm test` stays green
+because Vitest loads the client fresh. Running `npm run build` against a
+running `next dev` also clobbers its `.next`, which shows up as an unstyled
+page rather than an error.
+
 ## Tests
 
 ```bash

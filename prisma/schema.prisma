@@ -368,6 +368,15 @@ model Share {
   title      String?
   body       String?
   occurredAt DateTime?
+  // For a shared position: the whole why-chain as it stood at share time,
+  // encrypted like everything else. A snapshot rather than a reference,
+  // consistent with the rest of sharing — someone shown your argument should
+  // keep seeing the argument they were shown, not silently get a later one.
+  //
+  // Stored as JSON so an argument travels as one object. Nodes carry their
+  // parent's index rather than a database id: the recipient has no business
+  // holding row ids from your journal, and the shape is all they need.
+  chain      String?
   // What you wrote for this audience specifically — not a private reflection.
   note       String?
   // Per-share choices. A value's definition is what makes disagreement
@@ -375,6 +384,12 @@ model Share {
   // included by default — but it is still the sharer's call.
   showBody   Boolean   @default(true)
   showNote   Boolean   @default(true)
+  // A shared position can be just the claim, or the claim with the reasoning
+  // under it, or that plus the axioms it bottoms out in. Naming your bedrock
+  // is the most exposing thing this app can do, so it's a separate choice from
+  // showing the argument.
+  showChain  Boolean   @default(true)
+  showAxioms Boolean   @default(true)
   // Hidden hides it from everyone without destroying it; you can unhide.
   hiddenAt   DateTime?
   createdAt  DateTime  @default(now())

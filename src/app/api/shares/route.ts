@@ -47,12 +47,22 @@ export async function POST(req: Request) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { kind, sourceId, circleId, note, showBody, showNote } = await req
-    .json()
-    .catch(() => ({}));
+  const {
+    kind,
+    sourceId,
+    circleId,
+    note,
+    showBody,
+    showNote,
+    showChain,
+    showAxioms,
+  } = await req.json().catch(() => ({}));
 
-  if (kind !== "value" && kind !== "decision") {
-    return NextResponse.json({ error: "Share a value or a decision." }, { status: 400 });
+  if (kind !== "value" && kind !== "decision" && kind !== "position") {
+    return NextResponse.json(
+      { error: "Share a value, a decision, or a position." },
+      { status: 400 }
+    );
   }
   if (typeof sourceId !== "string" || !sourceId) {
     return NextResponse.json({ error: "Nothing selected to share." }, { status: 400 });
@@ -69,8 +79,38 @@ export async function POST(req: Request) {
   let title: string | null = null;
   let body: string | null = null;
   let occurredAt: Date | null = null;
+  let chain: string | null = null;
 
-  if (kind === "value") {
+  if (kind === "position") {
+    const position = await prisma.position.findFirst({
+      where: { id: sourceId, userId },
+      include: {
+        nodes: { orderBy: { createdAt: "asc" }, include: { axiom: true } },
+      },
+    });
+    if (!position) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+    title = position.statement;
+
+    // Flatten to array indices so no row id from the sharer's journal travels
+    // with the argument. `parent` is a position in this array, or null for a
+    // node answering the claim itself.
+    const index = new Map(position.nodes.map((n, i) => [n.id, i]));
+    const snapshot = position.nodes.map((n) => ({
+      claim: safeDecrypt(n.claim),
+      parent: n.parentId != null ? (index.get(n.parentId) ?? null) : null,
+      isBedrock: n.isBedrock,
+      // Naming your bedrock is the most exposing thing here, so it's a
+      // separate choice and stripped at snapshot time rather than at render
+      // time — declining to share it should mean it was never handed over.
+      axiom:
+        showAxioms !== false && n.axiom ? safeDecrypt(n.axiom.statement) : null,
+    }));
+
+    if (showChain !== false && snapshot.length > 0) {
+      chain = encrypt(JSON.stringify(snapshot));
+    }
+  } else if (kind === "value") {
     // Ownership check doubles as the fetch — you can only share your own.
     const value = await prisma.value.findFirst({
       where: { id: sourceId, userId },
@@ -95,10 +135,13 @@ export async function POST(req: Request) {
       title,
       body,
       occurredAt,
+      chain,
       note:
         typeof note === "string" && note.trim() ? encrypt(note.trim()) : null,
       showBody: showBody !== false,
       showNote: showNote !== false,
+      showChain: showChain !== false,
+      showAxioms: showAxioms !== false,
     },
   });
 

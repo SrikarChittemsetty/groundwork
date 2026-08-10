@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { safeDecrypt } from "@/lib/crypto";
+import { parseChain } from "@/lib/sharedChain";
 
 // Building the full export payload.
 //
@@ -160,6 +161,9 @@ export async function buildExport(userId: string) {
         title: s.title ? safeDecrypt(s.title) : null,
         body: s.body ? safeDecrypt(s.body) : null,
         note: s.note ? safeDecrypt(s.note) : null,
+        // For a shared position: the argument exactly as the recipient got it,
+        // which is not necessarily the argument as it stands now.
+        argumentAsShared: parseChain(s.chain),
         into: s.circle ? safeDecrypt(s.circle.name) : "a link only",
         hidden: s.hiddenAt !== null,
         createdAt: s.createdAt,
