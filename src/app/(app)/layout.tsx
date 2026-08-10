@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Nav from "@/components/Nav";
 import { getUserId } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { aiEnabled } from "@/lib/features";
 
 // Layout for all authenticated pages. Middleware verifies the session cookie's
 // signature, but it can't reach the database from the Edge runtime — so a
@@ -24,7 +25,7 @@ export default async function AppLayout({
 
   return (
     <>
-      <Nav />
+      <Nav aiEnabled={aiEnabled()} />
       <main className="shell">{children}</main>
     </>
   );

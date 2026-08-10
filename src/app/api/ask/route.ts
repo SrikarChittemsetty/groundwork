@@ -5,6 +5,7 @@ import { encrypt, safeDecrypt } from "@/lib/crypto";
 import { generateGuidance } from "@/lib/anthropic";
 import { checkAiRateLimit } from "@/lib/rateLimit";
 import { describeAiError } from "@/lib/aiErrors";
+import { aiEnabled } from "@/lib/features";
 
 // GET: list past consultations (newest first).
 export async function GET() {
@@ -44,6 +45,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Keep the situation under 4000 characters." },
       { status: 400 }
+    );
+  }
+
+  if (!aiEnabled()) {
+    return NextResponse.json(
+      { error: "The Ask feature is turned off for this installation." },
+      { status: 404 }
     );
   }
 

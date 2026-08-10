@@ -129,12 +129,18 @@ model Consultation {
 // "The last 90 days", or a specific value's title). It is ciphertext like
 // everything else — a scope naming a value would otherwise leak that value's
 // wording in plaintext.
+// `source` is "self" for a reflection the person wrote themselves and "ai" for
+// a generated one. Self-written reflections are the primary case: this tool
+// works fully without a model, and someone thinking on their own should get
+// the same first-class surface as someone using inference. `model` is the
+// model id for AI entries and "you" for self-written ones.
 model Reflection {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   body      String
   model     String
+  source    String   @default("ai")
   scope     String   @default("Everything")
   createdAt DateTime @default(now())
 

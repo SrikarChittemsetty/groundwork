@@ -5,6 +5,19 @@ with your own stated values — an honest mirror, not a judge. Log your core
 values, log real decisions over time, and get an honest, non-judgmental
 AI-assisted reflection on where they line up and where they don't.
 
+## The AI is optional
+
+The tool is built to work fully without a model. Writing down values, logging
+decisions, tagging which values a decision bears on, the timeline, the
+mechanically-derived patterns, and reflections **you write yourself** all run
+with no API key, no cost, and nothing transmitted anywhere. Set
+`AI_ENABLED="false"` and the AI surfaces disappear rather than sitting there
+disabled.
+
+If you want it to be just you and your record, that is a first-class way to
+use this — not a degraded one. The AI draft is an addition, and the privacy
+page tells the truth about which mode you're in.
+
 ## Design principles (non-negotiable)
 
 - **Visibility, not verdicts.** The tool surfaces patterns and tensions as
@@ -69,8 +82,14 @@ AI-assisted reflection on where they line up and where they don't.
   editing a value never overwrites what you used to believe; the timeline
   distinguishes "Value stated" from "Value revised"
 - Decision/action log with timestamps (encrypted), with inline editing
-- AI reflection over your values + decisions (Claude) — observations and
-  questions, never verdicts. Can be scoped to a single value or a recent
+- **Reflections you write yourself** — the primary surface. Read your record
+  back and put words to it; no key, no cost, no network
+- **Patterns** — neutral facts derived by counting (how long since a value
+  last bore on anything you logged, how often you've reworded it, which
+  decisions you never tagged). Deliberately no score: a number you could be
+  good or bad at would turn this into something to perform for
+- AI reflection over your values + decisions (Claude, optional) — observations
+  and questions, never verdicts. Can be scoped to a single value or a recent
   window; when scoped, the prompt is told so, since a filtered gap isn't the
   same as a gap in your life
 - Timeline filtering (everything / values only / decisions only) — the counts

@@ -4,16 +4,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 
+// `ai: true` marks a link that only exists when inference is configured. The
+// rest of the app is complete without them.
 const LINKS = [
   { href: "/values", label: "Values" },
   { href: "/log", label: "Log a decision" },
   { href: "/timeline", label: "Timeline" },
+  { href: "/patterns", label: "Patterns" },
   { href: "/reflect", label: "Reflect" },
-  { href: "/ask", label: "Ask" },
+  { href: "/ask", label: "Ask", ai: true },
   { href: "/settings", label: "Settings" },
 ];
 
-export default function Nav() {
+export default function Nav({ aiEnabled }: { aiEnabled: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -28,7 +31,7 @@ export default function Nav() {
       <div className="topbar">
         <span className="brand">Values Mirror</span>
         <nav className="nav" aria-label="Main">
-          {LINKS.map((l) => (
+          {LINKS.filter((l) => aiEnabled || !l.ai).map((l) => (
             <Link
               key={l.href}
               href={l.href}

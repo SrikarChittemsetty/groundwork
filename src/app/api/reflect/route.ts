@@ -5,6 +5,7 @@ import { encrypt, safeDecrypt } from "@/lib/crypto";
 import { generateReflection } from "@/lib/anthropic";
 import { checkAiRateLimit } from "@/lib/rateLimit";
 import { describeAiError } from "@/lib/aiErrors";
+import { aiEnabled } from "@/lib/features";
 
 // GET: list previously generated reflections (newest first).
 export async function GET() {
@@ -20,6 +21,7 @@ export async function GET() {
     id: r.id,
     body: safeDecrypt(r.body),
     model: r.model,
+    source: r.source,
     // Older rows predate scoping and carry the literal default.
     scope: r.scope === "Everything" ? "Everything" : safeDecrypt(r.scope),
     createdAt: r.createdAt,
@@ -39,6 +41,13 @@ export async function GET() {
 export async function POST(req: Request) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!aiEnabled()) {
+    return NextResponse.json(
+      { error: "AI reflections are turned off for this installation." },
+      { status: 404 }
+    );
+  }
 
   const limit = await checkAiRateLimit(userId);
   if (!limit.ok) {
@@ -125,6 +134,7 @@ export async function POST(req: Request) {
       userId,
       body: encrypt(result.text),
       model: result.model,
+      source: "ai",
       // A scope naming a value would leak its wording, so encrypt anything
       // other than the neutral default.
       scope: scopeLabel === "Everything" ? "Everything" : encrypt(scopeLabel),
@@ -136,6 +146,7 @@ export async function POST(req: Request) {
       id: created.id,
       body: result.text,
       model: created.model,
+      source: "ai",
       scope: scopeLabel,
       createdAt: created.createdAt,
     },

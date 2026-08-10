@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { aiEnabled } from "@/lib/features";
 
 export const metadata = {
   title: "How your data is handled — Values Mirror",
@@ -10,6 +11,7 @@ export const metadata = {
 // values and beliefs may be "special category data" under GDPR, this page is a
 // starting point for an honest disclosure — NOT a reviewed legal policy.
 export default function PrivacyPage() {
+  const ai = aiEnabled();
   return (
     <main className="shell">
       <h1>How your data is handled</h1>
@@ -61,15 +63,24 @@ export default function PrivacyPage() {
           technically decrypt your entries. Encryption here protects against a
           stolen database, not against the operator.
         </p>
-        <p>
-          <strong>The AI features send your data to Anthropic.</strong> When
-          you press &quot;Generate a reflection&quot; or &quot;Reason it
-          through,&quot; your stated values and logged decisions are sent to
-          Anthropic&apos;s API to produce the response. If you never use those
-          two features, your entries never leave this server. Everything else —
-          writing values, logging decisions, the timeline — works without any
-          data leaving.
-        </p>
+        {ai ? (
+          <p>
+            <strong>The AI features send your data to Anthropic.</strong> When
+            you press &quot;Or have AI draft one&quot; or &quot;Reason it
+            through,&quot; your stated values and logged decisions are sent to
+            Anthropic&apos;s API to produce the response. Those two buttons are
+            the only things that transmit anything. Everything else — writing
+            values, logging decisions, the timeline, patterns, and reflections
+            you write yourself — never leaves this server.
+          </p>
+        ) : (
+          <p>
+            <strong>Nothing here is sent anywhere.</strong> The AI features are
+            turned off on this installation, so no part of what you write is
+            transmitted to Anthropic or anyone else. Your entries exist only in
+            this app&apos;s database.
+          </p>
+        )}
       </div>
 
       <h2>Your control</h2>
