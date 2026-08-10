@@ -45,14 +45,18 @@ async function chain(statement: string, claims: string[]) {
   const position = await prisma.position.create({
     data: { userId, statement },
   });
+  // Explicit shape: `parentId` feeds the next iteration's create, so without
+  // an annotation TS can't resolve the type without consulting itself.
+  const nodes: { id: string; parentId: string | null }[] = [];
   let parentId: string | null = null;
-  const nodes = [];
   for (const claim of claims) {
-    const node: { id: string } = await prisma.reasonNode.create({
-      data: { positionId: position.id, userId, parentId, claim },
-    });
-    nodes.push(node);
-    parentId = node.id;
+    const created: { id: string; parentId: string | null } =
+      await prisma.reasonNode.create({
+        data: { positionId: position.id, userId, parentId, claim },
+        select: { id: true, parentId: true },
+      });
+    nodes.push(created);
+    parentId = created.id;
   }
   return { position, nodes };
 }
