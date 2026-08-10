@@ -2,7 +2,7 @@ import Link from "next/link";
 import { resolveShareLink } from "@/lib/circles";
 import { safeDecrypt } from "@/lib/crypto";
 import SharedArgument from "@/components/SharedArgument";
-import { parseChain } from "@/lib/sharedChain";
+import { parseChain } from "@/lib/sharedChain.server";
 import { formatDate } from "@/lib/format";
 
 export const metadata = {

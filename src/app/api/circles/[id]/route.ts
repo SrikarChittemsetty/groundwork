@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
-import { parseChain } from "@/lib/sharedChain";
+import { parseChain } from "@/lib/sharedChain.server";
 import { isMember, markRead } from "@/lib/circles";
 
 // The circle itself: who's in it, what's been shared, and the comments.

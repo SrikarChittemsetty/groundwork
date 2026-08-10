@@ -138,9 +138,11 @@ export default function SharePage() {
     <>
       <h1>Share something</h1>
       <p className="subtitle">
-        Hand one specific thing to specific people. Sharing a value carries how
-        you define it, which is usually where people turn out to disagree.
-        Nothing else of yours goes with it.
+        Hand one specific thing to specific people. A position carries the
+        argument under it, which is where two people who agree on what to do
+        usually turn out to part company; a value carries how you define it,
+        which is where two people using the same word turn out to mean
+        different things. Nothing else of yours goes with it.
       </p>
 
       <form onSubmit={submit} className="card-form">

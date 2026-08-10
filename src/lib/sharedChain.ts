@@ -1,14 +1,13 @@
-import { safeDecrypt } from "@/lib/crypto";
-
-// Reading back a shared argument.
+// Shared arguments — the browser-safe half.
 //
-// The snapshot is written at share time (see the Share model) and is the only
-// thing the recipient ever sees — the sharer's live position can move
-// afterwards without changing what someone was handed.
+// Everything here is pure: shape validation, tree building, and reading off
+// where an argument ends. It deliberately imports nothing from crypto, because
+// the circle page is a client component and pulling `node:crypto` into the
+// browser bundle fails the build outright. Decryption lives in
+// sharedChain.server.ts, which is only ever imported from server code.
 //
-// Parsing is deliberately forgiving. This JSON came out of the database and
-// through decryption, and a shared page failing to render because one node is
-// malformed would be worse than showing the rest of the argument.
+// The split is load-bearing rather than tidy: a client component importing one
+// helper from here would otherwise drag the whole crypto module with it.
 
 export type SharedNode = {
   claim: string;
@@ -17,14 +16,10 @@ export type SharedNode = {
   axiom: string | null;
 };
 
-export function parseChain(encrypted: string | null): SharedNode[] {
-  if (!encrypted) return [];
-  let raw: unknown;
-  try {
-    raw = JSON.parse(safeDecrypt(encrypted));
-  } catch {
-    return [];
-  }
+// Validation is deliberately forgiving. This JSON came out of a database and
+// through decryption, and a shared page failing to render because one node is
+// malformed would be worse than showing the rest of the argument.
+export function normalizeNodes(raw: unknown): SharedNode[] {
   if (!Array.isArray(raw)) return [];
 
   const nodes: SharedNode[] = [];
@@ -49,6 +44,23 @@ export function parseChain(encrypted: string | null): SharedNode[] {
         ? n.parent
         : null,
   }));
+}
+
+// Where an argument ends up. For comparing two people who reached the same
+// conclusion, this is the interesting part: agreeing on what to do while
+// bottoming out in different commitments is a completely different situation
+// from agreeing all the way down, and it's invisible unless you look here.
+//
+// Prefers the named axiom when the sharer included it, and falls back to the
+// bedrock claim itself when they didn't — declining to name your axioms
+// shouldn't make your argument's ending disappear.
+export function bottomsOutIn(nodes: SharedNode[]): string[] {
+  const ends = nodes
+    .filter((n) => n.isBedrock)
+    .map((n) => n.axiom ?? n.claim)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...new Set(ends)];
 }
 
 export type ChainTree = { node: SharedNode; index: number; children: ChainTree[] };

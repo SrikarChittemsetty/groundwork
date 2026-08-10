@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate, formatDateTime } from "@/lib/format";
 import SharedArgument from "@/components/SharedArgument";
-import type { SharedNode } from "@/lib/sharedChain";
+import { bottomsOutIn, type SharedNode } from "@/lib/sharedChain";
 
 type Comment = {
   id: string;
@@ -37,14 +37,23 @@ type Circle = {
   shares: Share[];
 };
 
-// Group value-shares by name so differing definitions of the same word sit
-// next to each other. Two people saying "modesty" and meaning different things
-// is the whole reason to share a value rather than just a decision.
+// Put the same thing, as two people wrote it, next to each other.
+//
+// For values that means differing definitions of one word — two people saying
+// "modesty" and meaning different things is the whole reason to share a value
+// rather than just a decision. For positions it means the arguments, which is
+// sharper: you can agree on what to do and part company three steps down, and
+// there is no other way to see that.
+//
+// Grouping is on the exact wording, deliberately. Guessing that two
+// differently-worded claims are "the same position" would be the tool having
+// an opinion about what someone meant.
 function comparisons(shares: Share[]) {
   const byName = new Map<string, Share[]>();
   for (const s of shares) {
-    if (s.kind !== "value" || !s.title) continue;
-    const key = s.title.trim().toLowerCase();
+    if (s.kind !== "value" && s.kind !== "position") continue;
+    if (!s.title) continue;
+    const key = `${s.kind}:${s.title.trim().toLowerCase()}`;
     byName.set(key, [...(byName.get(key) ?? []), s]);
   }
   return [...byName.entries()]
@@ -54,6 +63,14 @@ function comparisons(shares: Share[]) {
       return authors.size > 1;
     })
     .map(([, group]) => group);
+}
+
+// True when the people comparing arguments ended up in different places.
+// Same conclusion, different bedrock is the case worth calling out.
+function endingsDiffer(group: Share[]): boolean {
+  const sets = group.map((s) => bottomsOutIn(s.chain).sort().join(" | "));
+  const named = sets.filter(Boolean);
+  return new Set(named).size > 1;
 }
 
 export default function CirclePage() {
@@ -230,31 +247,64 @@ export default function CirclePage() {
         <>
           <h2>Where you differ</h2>
           <p className="footnote" style={{ marginBottom: 12 }}>
-            You&apos;ve each written down what the same value means to you.
-            That&apos;s usually where the actual disagreement lives.
+            The same thing, as each of you wrote it. With a value that&apos;s
+            the definition; with a position it&apos;s the argument, and the
+            step where you part company is usually further down than either of
+            you expected.
           </p>
-          {groups.map((group, i) => (
-            <article key={i} className="card">
-              <div className="title">{group[0].title}</div>
-              <div className="compare">
-                {group.map((s) => (
-                  <div key={s.id} className="compare-side">
-                    <div className="history-when">
-                      {s.isYours ? "You" : s.author}
-                    </div>
-                    <div className="body-text">
-                      {s.body ?? <em className="notice">Not shown</em>}
-                    </div>
-                    {s.note && (
-                      <p className="footnote" style={{ marginTop: 8 }}>
-                        {s.note}
-                      </p>
-                    )}
+          {groups.map((group, i) => {
+            const isPosition = group[0].kind === "position";
+            return (
+              <article key={i} className="card">
+                <div className="title">{group[0].title}</div>
+                {isPosition && endingsDiffer(group) && (
+                  <div className="body-text shifted">
+                    You reach the same position and bottom out in different
+                    places. That isn&apos;t a disagreement about what to do —
+                    it&apos;s a difference in what you each take as needing no
+                    reason.
                   </div>
-                ))}
-              </div>
-            </article>
-          ))}
+                )}
+                <div className="compare">
+                  {group.map((s) => (
+                    <div key={s.id} className="compare-side">
+                      <div className="history-when">
+                        {s.isYours ? "You" : s.author}
+                      </div>
+                      {isPosition ? (
+                        <>
+                          <SharedArgument nodes={s.chain} />
+                          {bottomsOutIn(s.chain).length > 0 ? (
+                            <p className="footnote" style={{ marginTop: 10 }}>
+                              Bottoms out in:{" "}
+                              {bottomsOutIn(s.chain).join("; ")}
+                            </p>
+                          ) : (
+                            <p className="footnote" style={{ marginTop: 10 }}>
+                              <em className="notice">
+                                {s.chain.length === 0
+                                  ? "Reasoning not shown"
+                                  : "Hasn't reached bedrock yet"}
+                              </em>
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="body-text">
+                          {s.body ?? <em className="notice">Not shown</em>}
+                        </div>
+                      )}
+                      {s.note && (
+                        <p className="footnote" style={{ marginTop: 8 }}>
+                          {s.note}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
         </>
       )}
 

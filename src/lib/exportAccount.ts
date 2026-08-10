@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { safeDecrypt } from "@/lib/crypto";
-import { parseChain } from "@/lib/sharedChain";
+import { parseChain } from "@/lib/sharedChain.server";
 
 // Building the full export payload.
 //
