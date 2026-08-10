@@ -108,6 +108,113 @@ model DecisionValue {
   @@index([userId])
 }
 
+// --- Sharing ---------------------------------------------------------------
+//
+// The private record stays private. Sharing hands over a SNAPSHOT of one
+// specific thing you chose, at the moment you chose it — never a live window
+// into your journal, and never anything you didn't pick. Every field the
+// recipient sees is one the sharer opted into, and anything shared can be
+// hidden or revoked later without being deleted.
+//
+// Snapshots rather than references, deliberately: what you showed someone
+// should stay what you showed them, even after you rewrite the original.
+
+model Circle {
+  id        String         @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime       @default(now())
+  members   CircleMember[]
+  invites   CircleInvite[]
+  shares    Share[]
+
+  @@index([ownerId])
+}
+
+model CircleMember {
+  id       String   @id @default(cuid())
+  circleId String
+  circle   Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId   String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  @@unique([circleId, userId])
+  @@index([userId])
+}
+
+// An invite is a bearer token: whoever holds the link can join. Revocable and
+// optionally time-limited, because handing someone a link is not the same as
+// trusting them forever.
+model CircleInvite {
+  id          String    @id @default(cuid())
+  circleId    String
+  circle      Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  createdById String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([circleId])
+}
+
+// One shared thing. `kind` is "value" or "decision". All text is ciphertext.
+model Share {
+  id         String    @id @default(cuid())
+  userId     String
+  circleId   String?
+  circle     Circle?   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  kind       String
+  // Snapshot of the source at share time.
+  title      String?
+  body       String?
+  occurredAt DateTime?
+  // What you wrote for this audience specifically — not a private reflection.
+  note       String?
+  // Per-share choices. A value's definition is what makes disagreement
+  // legible ("I read modesty this way, you read it that way"), so it's
+  // included by default — but it is still the sharer's call.
+  showBody   Boolean   @default(true)
+  showNote   Boolean   @default(true)
+  // Hidden hides it from everyone without destroying it; you can unhide.
+  hiddenAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  comments ShareComment[]
+  links    ShareLink[]
+
+  @@index([circleId])
+  @@index([userId])
+}
+
+model ShareComment {
+  id        String    @id @default(cuid())
+  shareId   String
+  share     Share     @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  userId    String
+  body      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([shareId])
+}
+
+// A one-off link to a single share, for showing someone your reasoning without
+// pulling them into a circle. View-only, revocable, optionally expiring.
+model ShareLink {
+  id          String    @id @default(cuid())
+  shareId     String
+  share       Share     @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  createdById String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([shareId])
+}
+
 // A "what should I do?" decision-aid query and its response. The tool lays out
 // how the user's stated values bear on the situation — options and tensions,
 // never a verdict. `question` and `body` are ciphertext.

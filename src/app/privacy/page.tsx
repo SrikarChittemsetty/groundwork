@@ -33,9 +33,15 @@ export default function PrivacyPage() {
       <h2>Who can see it</h2>
       <div className="card">
         <p>
-          Nobody but you. There is no sharing feature, no social feed, no
-          public profile, and no other user can query your data. This is not
-          social media and there is no audience.
+          By default, nobody but you. There is no feed, no public profile, and
+          no way for another person to browse you or search your entries.
+        </p>
+        <p>
+          <strong>Unless you share something.</strong> You can hand a specific
+          value or decision to a circle you created, or to someone holding a
+          link you made. They see only that one item, only the parts you chose
+          to include, and only until you hide or revoke it. Your other entries
+          — and your private reflections — are never part of it.
         </p>
         <p>
           There are no analytics, no advertising, and no third-party trackers

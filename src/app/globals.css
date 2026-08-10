@@ -721,6 +721,76 @@ button.chip.on:hover:not(:disabled) {
 }
 
 /* --------------------------------------------------------------------------
+   Plain factual lists (Patterns)
+   -------------------------------------------------------------------------- */
+
+.facts {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+.facts li {
+  position: relative;
+  padding-left: 16px;
+  margin: 8px 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.facts li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+/* --------------------------------------------------------------------------
+   Side-by-side value definitions (Circles)
+
+   Two people's readings of the same value sit next to each other, so the
+   divergence is the visible thing rather than something you have to hunt for.
+   -------------------------------------------------------------------------- */
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+.compare-side {
+  border-left: 2px solid var(--accent-line);
+  padding-left: 14px;
+}
+.compare-side .history-when {
+  display: block;
+  margin-bottom: 6px;
+}
+
+select {
+  width: 100%;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+select:hover {
+  border-color: var(--border-strong);
+}
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* --------------------------------------------------------------------------
    Value wording history
    -------------------------------------------------------------------------- */
 

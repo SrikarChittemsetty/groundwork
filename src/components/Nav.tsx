@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/timeline", label: "Timeline" },
   { href: "/patterns", label: "Patterns" },
   { href: "/reflect", label: "Reflect" },
+  { href: "/circles", label: "Circles" },
   { href: "/ask", label: "Ask", ai: true },
   { href: "/settings", label: "Settings" },
 ];
