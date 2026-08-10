@@ -4,6 +4,8 @@ import {
   shiftsUnder,
   isInQuestion,
   describeShifts,
+  unfinishedLeaves,
+  deepestChain,
   type AxiomState,
 } from "../src/lib/derive";
 
@@ -109,6 +111,50 @@ describe("what a settled position is left standing on", () => {
 
   it("says nothing for a position resting on no axioms yet", () => {
     expect(shiftsUnder(settled, [])).toEqual([]);
+  });
+});
+
+describe("the shape of a why-chain", () => {
+  // a → b → c, plus a second branch off a that was called bedrock.
+  const tree = [
+    { id: "a", parentId: null, isBedrock: false },
+    { id: "b", parentId: "a", isBedrock: false },
+    { id: "c", parentId: "b", isBedrock: false },
+    { id: "d", parentId: "a", isBedrock: true },
+  ];
+
+  it("finds the branch you stopped answering", () => {
+    // c has nothing under it and wasn't called bedrock — you were asked why
+    // and walked away. d ended honestly and doesn't count.
+    expect(unfinishedLeaves(tree).map((n) => n.id)).toEqual(["c"]);
+  });
+
+  it("treats a bedrock leaf as finished, not abandoned", () => {
+    expect(
+      unfinishedLeaves([{ id: "x", parentId: null, isBedrock: true }])
+    ).toEqual([]);
+  });
+
+  it("treats an untouched position as having nothing unfinished", () => {
+    expect(unfinishedLeaves([])).toEqual([]);
+  });
+
+  it("measures the longest branch, not the node count", () => {
+    // Four nodes, but the deepest chain is a → b → c.
+    expect(deepestChain(tree)).toBe(3);
+  });
+
+  it("is zero for a position nobody has answered yet", () => {
+    expect(deepestChain([])).toBe(0);
+  });
+
+  it("terminates on a cycle rather than hanging", () => {
+    // Unreachable through the UI, but a hang here would take the page down.
+    const cyclic = [
+      { id: "p", parentId: "q", isBedrock: false },
+      { id: "q", parentId: "p", isBedrock: false },
+    ];
+    expect(deepestChain(cyclic)).toBe(2);
   });
 });
 

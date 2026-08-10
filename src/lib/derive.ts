@@ -86,6 +86,48 @@ export function isInQuestion(
   return shiftsUnder(position, restsOn).length > 0;
 }
 
+// --- Shape of a why-chain --------------------------------------------------
+//
+// Facts about the tree itself, by arithmetic. Used by Patterns, which is
+// deliberately model-free: "four of your arguments bottom out in the same
+// commitment" is something a tool can count, and counting it is the whole
+// payoff the essay describes. Nothing here scores anything.
+
+export type ChainNode = {
+  id: string;
+  parentId: string | null;
+  isBedrock: boolean;
+};
+
+// Places you were asked why and haven't answered: a claim with nothing
+// underneath it that you also didn't call bedrock. This is the difference
+// between an argument that finished and one that merely stopped.
+export function unfinishedLeaves(nodes: ChainNode[]): ChainNode[] {
+  const hasChild = new Set(
+    nodes.map((n) => n.parentId).filter((id): id is string => id !== null)
+  );
+  return nodes.filter((n) => !n.isBedrock && !hasChild.has(n.id));
+}
+
+// How many "why?"s deep the longest branch goes. Cycles can't occur through
+// the UI, but the walk is bounded anyway rather than trusting that.
+export function deepestChain(nodes: ChainNode[]): number {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  let deepest = 0;
+  for (const start of nodes) {
+    let depth = 0;
+    let cursor: ChainNode | undefined = start;
+    const seen = new Set<string>();
+    while (cursor && !seen.has(cursor.id)) {
+      seen.add(cursor.id);
+      depth++;
+      cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined;
+    }
+    if (depth > deepest) deepest = depth;
+  }
+  return deepest;
+}
+
 // Plain-English summary for the badge. Kept here beside the rule it describes
 // so the wording can't drift from the logic.
 export function describeShifts(shifts: Shift[]): string {

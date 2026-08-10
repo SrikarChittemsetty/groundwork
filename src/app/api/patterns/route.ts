@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { safeDecrypt } from "@/lib/crypto";
+import {
+  shiftsUnder,
+  unfinishedLeaves,
+  deepestChain,
+} from "@/lib/derive";
 
 // Observations derived by arithmetic, not inference. No model, no key, no cost.
 //
@@ -22,20 +27,33 @@ export async function GET() {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [valueRows, decisionRows] = await Promise.all([
-    prisma.value.findMany({
-      where: { userId },
-      include: {
-        versions: { orderBy: { createdAt: "asc" } },
-        decisions: { include: { decision: true } },
-      },
-    }),
-    prisma.decision.findMany({
-      where: { userId },
-      include: { values: true },
-      orderBy: { occurredAt: "desc" },
-    }),
-  ]);
+  const [valueRows, decisionRows, positionRows, axiomRows, tensionRows] =
+    await Promise.all([
+      prisma.value.findMany({
+        where: { userId },
+        include: {
+          versions: { orderBy: { createdAt: "asc" } },
+          decisions: { include: { decision: true } },
+        },
+      }),
+      prisma.decision.findMany({
+        where: { userId },
+        include: { values: true },
+        orderBy: { occurredAt: "desc" },
+      }),
+      prisma.position.findMany({
+        where: { userId },
+        include: { nodes: { include: { axiom: true } } },
+      }),
+      prisma.axiom.findMany({
+        where: { userId },
+        include: {
+          versions: true,
+          nodes: { select: { positionId: true } },
+        },
+      }),
+      prisma.axiomTension.findMany({ where: { userId } }),
+    ]);
 
   const values = valueRows.map((v) => {
     const linked = v.decisions
@@ -69,8 +87,81 @@ export async function GET() {
     if (longestGapDays === null || gap > longestGapDays) longestGapDays = gap;
   }
 
+  // --- The reasoning itself ------------------------------------------------
+  //
+  // The facts most worth having are structural, and all of them are counting:
+  // which commitments turn out to carry the most weight, which arguments you
+  // stopped answering partway down, and which settled conclusions are standing
+  // on ground that has since moved.
+
+  const axioms = axiomRows
+    .map((a) => {
+      // One position can reach the same axiom down two branches; the number
+      // that means anything is distinct positions.
+      const positions = new Set(a.nodes.map((n) => n.positionId));
+      return {
+        id: a.id,
+        statement: safeDecrypt(a.statement),
+        // "Ten arguments bottoming out in three commitments" is the discovery
+        // this whole tool exists to make available. This is that number.
+        carries: positions.size,
+        rewordings: a.versions.length,
+        stillHeld: a.retiredAt === null,
+        reachedAt: a.createdAt,
+      };
+    })
+    .sort((a, b) => b.carries - a.carries);
+
+  const positions = positionRows.map((p) => {
+    const chain = p.nodes.map((n) => ({
+      id: n.id,
+      parentId: n.parentId,
+      isBedrock: n.isBedrock,
+    }));
+    const restsOn = [
+      ...new Map(
+        p.nodes
+          .filter((n) => n.axiom)
+          .map((n) => [
+            n.axiom!.id,
+            { ...n.axiom!, statement: safeDecrypt(n.axiom!.statement) },
+          ])
+      ).values(),
+    ];
+    return {
+      id: p.id,
+      statement: safeDecrypt(p.statement),
+      settled: p.settledAt !== null,
+      steps: p.nodes.length,
+      deepest: deepestChain(chain),
+      // Branches where you were asked why and didn't answer. Not a failing —
+      // an argument in progress — but worth being able to find again.
+      unanswered: unfinishedLeaves(chain).length,
+      restsOn: restsOn.length,
+      inQuestion:
+        shiftsUnder({ id: p.id, settledAt: p.settledAt }, restsOn).length > 0,
+      startedAt: p.createdAt,
+    };
+  });
+
   return NextResponse.json({
     values,
+    axioms,
+    positions,
+    reasoning: {
+      positionsOpened: positions.length,
+      positionsSettled: positions.filter((p) => p.settled).length,
+      positionsInQuestion: positions.filter((p) => p.inQuestion).length,
+      positionsWithUnanswered: positions.filter((p) => p.unanswered > 0).length,
+      axiomsReached: axioms.length,
+      axiomsRetired: axioms.filter((a) => !a.stillHeld).length,
+      // An axiom under more than one position is the interesting case: it
+      // means two different arguments landed in the same place.
+      sharedAxioms: axioms.filter((a) => a.carries > 1).length,
+      deepestChain: positions.reduce((m, p) => Math.max(m, p.deepest), 0),
+      tensionsNoted: tensionRows.length,
+      tensionsResolved: tensionRows.filter((t) => t.resolvedAt !== null).length,
+    },
     decisions: {
       total: decisionRows.length,
       untagged: untaggedDecisions,
