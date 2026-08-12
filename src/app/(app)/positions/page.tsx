@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
+import { submitOnChord } from "@/lib/keys";
+import Chord from "@/components/Chord";
 
 type Shift = {
   axiomId: string;
@@ -41,8 +43,10 @@ export default function PositionsPage() {
     load();
   }, []);
 
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
+  // Called from the form's onSubmit and from the Cmd+Enter shortcut, hence the
+  // optional event rather than a synthesised one.
+  async function create(e?: React.FormEvent) {
+    e?.preventDefault();
     setError(null);
     setBusy(true);
     const res = await fetch("/api/positions", {
@@ -79,6 +83,10 @@ export default function PositionsPage() {
           id="statement"
           placeholder="e.g. I should turn down the higher-paying role. Or: it's wrong to keep this from her."
           value={statement}
+          onKeyDown={submitOnChord(
+            () => create(),
+            !busy && Boolean(statement.trim())
+          )}
           onChange={(e) => setStatement(e.target.value)}
           style={{ minHeight: 90 }}
         />
@@ -92,7 +100,7 @@ export default function PositionsPage() {
         </div>
         <div style={{ marginTop: 18 }}>
           <button type="submit" disabled={busy || !statement.trim()}>
-            {busy ? "Starting…" : "Start asking why"}
+            {busy ? "Starting…" : <>Start asking why <Chord /></>}
           </button>
         </div>
       </form>

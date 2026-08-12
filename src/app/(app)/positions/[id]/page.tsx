@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
+import { submitOnChord } from "@/lib/keys";
+import Chord from "@/components/Chord";
 
 type Node = {
   id: string;
@@ -206,6 +208,10 @@ export default function PositionPage() {
               <textarea
                 id={`reword-${key}`}
                 value={nodeDraft}
+                onKeyDown={submitOnChord(
+                  () => rewordNode(node.id),
+                  Boolean(nodeDraft.trim())
+                )}
                 onChange={(e) => setNodeDraft(e.target.value)}
                 style={{ minHeight: 64 }}
               />
@@ -250,6 +256,10 @@ export default function PositionPage() {
                   <textarea
                     id={`why-${key}`}
                     placeholder="Because…"
+                    onKeyDown={submitOnChord(
+                      () => answer(node.id),
+                      Boolean((drafts[key] ?? "").trim())
+                    )}
                     value={drafts[key] ?? ""}
                     onChange={(e) =>
                       setDrafts((d) => ({ ...d, [key]: e.target.value }))
@@ -317,6 +327,7 @@ export default function PositionPage() {
           <textarea
             id="reword-position"
             value={titleDraft}
+            onKeyDown={submitOnChord(rewordPosition, Boolean(titleDraft.trim()))}
             onChange={(e) => setTitleDraft(e.target.value)}
             style={{ minHeight: 70 }}
           />
