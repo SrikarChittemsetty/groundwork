@@ -1366,3 +1366,34 @@ select:focus {
   margin-top: 3px;
   color: var(--reason-hue);
 }
+
+/* Correcting your own wording
+   ---------------------------------------------------------------------------
+   The affordance sits beside the text and stays quiet — muted until you reach
+   for it — rather than appearing on hover. Hidden-until-hover was the first
+   attempt and it's wrong twice over: there is no hover on touch, and a control
+   that's invisible while focused fails the one thing keyboard users need from
+   it. Muted colour gets the same restraint without either problem. */
+.claim-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.claim-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.link.quiet {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  transition: color var(--fast) var(--ease);
+}
+
+.claim-row:hover .link.quiet,
+.link.quiet:hover,
+.link.quiet:focus {
+  color: var(--accent);
+}

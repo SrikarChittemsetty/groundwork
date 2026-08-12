@@ -82,6 +82,49 @@ export default function PositionPage() {
     }
   }
 
+  // Fixing your own wording. Rewording a step or the position itself keeps no
+  // history and doesn't unsettle anything — see the API comment. You should be
+  // able to correct a sentence without the tool reading it as a change of mind.
+  const [editingNode, setEditingNode] = useState<string | null>(null);
+  const [nodeDraft, setNodeDraft] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+
+  async function rewordNode(nodeId: string) {
+    const next = nodeDraft.trim();
+    if (!next) return;
+    const res = await fetch(`/api/positions/${id}/nodes`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nodeId, claim: next }),
+    });
+    if (res.ok) {
+      setEditingNode(null);
+      setNodeDraft("");
+      load();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not save.");
+    }
+  }
+
+  async function rewordPosition() {
+    const next = titleDraft.trim();
+    if (!next) return;
+    const res = await fetch(`/api/positions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statement: next }),
+    });
+    if (res.ok) {
+      setEditingTitle(false);
+      load();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not save.");
+    }
+  }
+
   async function setBedrock(nodeId: string, axiomId?: string) {
     setError(null);
     const res = await fetch(`/api/positions/${id}/nodes`, {
@@ -157,7 +200,37 @@ export default function PositionPage() {
     return (
       <div key={node.id} className="why-node" style={{ marginLeft: depth ? 20 : 0 }}>
         <div className={`why-claim${node.isBedrock ? " bedrock" : ""}`}>
-          <div className="body-text">{node.claim}</div>
+          {editingNode === node.id ? (
+            <div className="edit-box">
+              <label htmlFor={`reword-${key}`}>Reword this step</label>
+              <textarea
+                id={`reword-${key}`}
+                value={nodeDraft}
+                onChange={(e) => setNodeDraft(e.target.value)}
+                style={{ minHeight: 64 }}
+              />
+              <div className="card-actions">
+                <button onClick={() => rewordNode(node.id)}>Save</button>
+                <button className="ghost" onClick={() => setEditingNode(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="claim-row">
+              <div className="body-text">{node.claim}</div>
+              <button
+                className="link quiet"
+                aria-label="Reword this step"
+                onClick={() => {
+                  setEditingNode(node.id);
+                  setNodeDraft(node.claim);
+                }}
+              >
+                Reword
+              </button>
+            </div>
+          )}
 
           {node.isBedrock ? (
             <div className="card-actions">
@@ -238,7 +311,42 @@ export default function PositionPage() {
 
   return (
     <>
-      <h1>{position.statement}</h1>
+      {editingTitle ? (
+        <div className="card-form" style={{ marginBottom: 18 }}>
+          <label htmlFor="reword-position">Reword this position</label>
+          <textarea
+            id="reword-position"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            style={{ minHeight: 70 }}
+          />
+          <p className="footnote">
+            The reasoning underneath stays as it is. If the change is big
+            enough that the argument no longer answers it, that&apos;s worth
+            noticing — but it&apos;s your call, not the tool&apos;s.
+          </p>
+          <div className="card-actions">
+            <button onClick={rewordPosition}>Save</button>
+            <button className="ghost" onClick={() => setEditingTitle(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="claim-row">
+          <h1 style={{ marginBottom: 0 }}>{position.statement}</h1>
+          <button
+            className="link quiet"
+            aria-label="Reword this position"
+            onClick={() => {
+              setEditingTitle(true);
+              setTitleDraft(position.statement);
+            }}
+          >
+            Reword
+          </button>
+        </div>
+      )}
       <p className="subtitle">
         {roots.length === 0
           ? "Why do you hold this? Answer, and you'll be asked why of the answer."

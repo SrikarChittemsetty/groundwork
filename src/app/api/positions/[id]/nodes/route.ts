@@ -70,12 +70,19 @@ export async function POST(
   });
 }
 
-// Mark a node as bedrock, or take the mark off.
+// Mark a node as bedrock, or take the mark off — or reword the claim itself.
 //
 // Marking bedrock is the moment an axiom is found. You can attach it to an
 // axiom you've already reached elsewhere (`axiomId`) — which is how the
 // discovery that everything bottoms out in the same few commitments becomes
 // visible — or let it register as a new one.
+//
+// Rewording keeps no history, unlike values and axioms, and the difference is
+// deliberate. Those two are kept because something else depends on their
+// wording: a value's drift over time IS the record, and positions were settled
+// against an axiom's wording. A step inside one argument is just that
+// argument's own text — you should be able to fix a sentence you got wrong
+// without the tool treating it as a change of mind.
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -83,8 +90,31 @@ export async function PATCH(
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { nodeId, isBedrock, axiomId } = await req.json().catch(() => ({}));
-  if (typeof nodeId !== "string" || typeof isBedrock !== "boolean") {
+  const { nodeId, isBedrock, axiomId, claim } = await req.json().catch(() => ({}));
+  if (typeof nodeId !== "string") {
+    return NextResponse.json({ error: "Which step?" }, { status: 400 });
+  }
+
+  // Rewording is its own operation and doesn't touch bedrock or the axiom.
+  if (typeof claim === "string") {
+    const next = claim.trim();
+    if (!next) {
+      return NextResponse.json(
+        { error: "A step can't be blank. Remove it instead." },
+        { status: 400 }
+      );
+    }
+    const updated = await prisma.reasonNode.updateMany({
+      where: { id: nodeId, positionId: params.id, userId },
+      data: { claim: encrypt(next) },
+    });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, claim: next });
+  }
+
+  if (typeof isBedrock !== "boolean") {
     return NextResponse.json({ error: "Nothing to change." }, { status: 400 });
   }
 

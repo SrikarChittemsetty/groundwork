@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
-import { safeDecrypt } from "@/lib/crypto";
+import { encrypt, safeDecrypt } from "@/lib/crypto";
 import { shiftsUnder, describeShifts } from "@/lib/derive";
 
 // One position with its whole reason tree.
@@ -75,7 +75,31 @@ export async function PATCH(
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { settled } = await req.json().catch(() => ({}));
+  const { settled, statement } = await req.json().catch(() => ({}));
+
+  // Rewording the position you're interrogating. Kept without history for the
+  // same reason a reason-step is: this is the argument's own text, not a
+  // commitment something else rests on. It also deliberately doesn't unsettle
+  // the position — un-settling someone's conclusion on their behalf is a
+  // verdict, and the tool doesn't hand those down.
+  if (typeof statement === "string") {
+    const next = statement.trim();
+    if (!next) {
+      return NextResponse.json(
+        { error: "A position needs to say something." },
+        { status: 400 }
+      );
+    }
+    const updated = await prisma.position.updateMany({
+      where: { id: params.id, userId },
+      data: { statement: encrypt(next) },
+    });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, statement: next });
+  }
+
   if (typeof settled !== "boolean") {
     return NextResponse.json({ error: "Nothing to change." }, { status: 400 });
   }
