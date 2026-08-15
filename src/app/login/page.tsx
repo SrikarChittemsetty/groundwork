@@ -33,7 +33,7 @@ export default function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="brand">Values Mirror</div>
+        <div className="brand">Groundwork</div>
         <p className="subtitle">An honest, private mirror for your own values.</p>
         <form onSubmit={onSubmit}>
           <label htmlFor="email">Email</label>

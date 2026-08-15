@@ -19,7 +19,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Values Mirror",
+  title: "Groundwork",
   description:
     "A private mirror for checking whether you're living consistently with your own stated values.",
   robots: { index: false, follow: false },

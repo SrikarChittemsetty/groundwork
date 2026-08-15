@@ -11,7 +11,7 @@ export function describeAiError(err: unknown, action: string): AiFailure {
   const raw = err instanceof Error ? err.message : String(err);
 
   // Log the real thing where the operator can see it.
-  console.error(`[values-mirror] ${action} failed:`, raw);
+  console.error(`[groundwork] ${action} failed:`, raw);
 
   // Configuration problem — the operator needs to know precisely what's wrong.
   if (raw.includes("ANTHROPIC_API_KEY")) {

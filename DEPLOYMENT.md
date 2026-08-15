@@ -1,8 +1,36 @@
-# Deploying Values Mirror
+# Deploying Groundwork
 
 Written for Vercel + a managed Postgres, which is the cheapest path that
 doesn't lose your data on redeploy. Nothing here is exotic; the app is a
 standard Next.js App Router project.
+
+## The short version
+
+Ten minutes, two free accounts, no card:
+
+1. **Neon** (neon.tech) — sign in with GitHub, create a project, copy the
+   connection string.
+2. **Vercel** (vercel.com) — sign in with GitHub, "Add New Project", import
+   `SrikarChittemsetty/groundwork`.
+3. Add four environment variables in Vercel (Settings → Environment
+   Variables), then deploy:
+
+   | Variable | Value |
+   | --- | --- |
+   | `DATABASE_URL` | the Neon connection string |
+   | `AUTH_SECRET` | `openssl rand -base64 48` |
+   | `APP_ENCRYPTION_KEY` | `openssl rand -hex 32` — **save this first** |
+   | `ANTHROPIC_API_KEY` | optional; leave unset and the AI features simply don't appear |
+
+4. Once it's live, run the schema push against the Neon URL from your laptop:
+
+   ```bash
+   DATABASE_URL="<neon-url>" npx prisma db push
+   ```
+
+Do **not** reuse the `APP_ENCRYPTION_KEY` from your local `.env`. Production
+starts with an empty database, so a fresh key costs nothing — and keeping the
+two separate means a leak of one doesn't read the other.
 
 ## Before you deploy: read this once
 
@@ -27,19 +55,17 @@ postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require
 
 ## 2. Point Prisma at Postgres
 
-In `prisma/schema.prisma`:
+Nothing to do — `npm run build` sets the datasource provider from
+`DATABASE_URL` before it builds. A `postgresql://` URL gives you Postgres, a
+`file:` URL gives you SQLite. Prisma can't read an env var for `provider`, so
+this used to be a hand-edit you had to remember and then undo; deriving it
+removes a manual step whose failure mode is a build that succeeds and an app
+that dies at runtime.
 
-```prisma
-datasource db {
-  provider = "postgresql"   // was "sqlite"
-  url      = env("DATABASE_URL")
-}
-```
-
-That's the entire change — no model edits are required. This has been verified
-against a real Postgres 16 instance: schema push, seeding, versioned edits
-inside transactions, cascade deletes, and encryption at rest all behave
-identically to SQLite.
+No model changes are needed either way. This was verified against a real
+Postgres 16 instance: schema push, seeding, versioned edits inside
+transactions, cascade deletes, and encryption at rest all behaved identically
+to SQLite.
 
 Then push the schema:
 

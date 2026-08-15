@@ -39,7 +39,7 @@ export async function sendMail(mail: Mail): Promise<MailResult> {
   }
 
   console.log(
-    `\n[values-mirror] mail to ${mail.to}\n  ${mail.subject}\n${mail.body
+    `\n[groundwork] mail to ${mail.to}\n  ${mail.subject}\n${mail.body
       .split("\n")
       .map((l) => `  ${l}`)
       .join("\n")}\n`
@@ -50,7 +50,7 @@ export async function sendMail(mail: Mail): Promise<MailResult> {
 export function resetEmail(link: string, expiresInHours: number): Mail {
   return {
     to: "",
-    subject: "Reset your Values Mirror password",
+    subject: "Reset your Groundwork password",
     body: [
       "Someone asked to reset the password on this account.",
       "",

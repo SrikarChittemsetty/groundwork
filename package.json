@@ -1,11 +1,11 @@
 {
-  "name": "values-mirror",
+  "name": "groundwork",
   "version": "0.1.0",
   "private": true,
   "description": "A private tool to check whether you're living consistently with your own stated values.",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "node scripts/db-provider.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -15,7 +15,8 @@
     "postinstall": "prisma generate",
     "smoke": "node scripts/smoke.mjs",
     "build:check": "NEXT_DIST_DIR=.next-verify next build",
-    "verify": "tsc --noEmit && vitest run && npm run build:check && npm run smoke"
+    "verify": "tsc --noEmit && vitest run && npm run build:check && npm run smoke",
+    "db:provider": "node scripts/db-provider.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

@@ -1,4 +1,4 @@
-# Values Mirror
+# Groundwork
 
 A Socratic journal for reasoning from your own axioms.
 

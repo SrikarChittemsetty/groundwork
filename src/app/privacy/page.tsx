@@ -2,7 +2,7 @@ import Link from "next/link";
 import { aiEnabled } from "@/lib/features";
 
 export const metadata = {
-  title: "How your data is handled — Values Mirror",
+  title: "How your data is handled — Groundwork",
 };
 
 // A plain-English, honest description of what actually happens to a user's

@@ -33,7 +33,7 @@ export default function Nav({ aiEnabled }: { aiEnabled: boolean }) {
   return (
     <header className="topbar-wrap">
       <div className="topbar">
-        <span className="brand">Values Mirror</span>
+        <span className="brand">Groundwork</span>
         <nav className="nav" aria-label="Main">
           {LINKS.filter((l) => aiEnabled || !l.ai).map((l) => (
             <Link

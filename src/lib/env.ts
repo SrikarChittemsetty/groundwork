@@ -100,6 +100,6 @@ export function assertProductionEnv(): void {
 
   if (!warned) {
     warned = true;
-    console.warn(`[values-mirror] configuration warnings:\n${summary}`);
+    console.warn(`[groundwork] configuration warnings:\n${summary}`);
   }
 }

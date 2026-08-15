@@ -33,7 +33,7 @@ export default function SignupPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="brand">Values Mirror</div>
+        <div className="brand">Groundwork</div>
         <p className="subtitle">
           Create a private account. Your values and decisions are encrypted and
           visible only to you.

@@ -94,7 +94,7 @@ export default function ResetPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <span className="brand">Values Mirror</span>
+        <span className="brand">Groundwork</span>
         <Suspense fallback={<div className="skeleton" style={{ height: 90 }} />}>
           <ResetForm />
         </Suspense>

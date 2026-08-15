@@ -6,7 +6,7 @@ import { parseChain } from "@/lib/sharedChain.server";
 import { formatDate } from "@/lib/format";
 
 export const metadata = {
-  title: "Shared reasoning — Values Mirror",
+  title: "Shared reasoning — Groundwork",
   robots: { index: false, follow: false },
 };
 
@@ -101,7 +101,7 @@ export default async function SharedPage({
       </p>
       <hr />
       <p className="footnote">
-        <Link href="/">Values Mirror</Link> — a private tool for checking
+        <Link href="/">Groundwork</Link> — a private tool for checking
         whether you live consistently with your own stated values.
       </p>
     </main>

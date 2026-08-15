@@ -27,7 +27,7 @@ export default function ForgotPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <span className="brand">Values Mirror</span>
+        <span className="brand">Groundwork</span>
         <p className="subtitle">
           Resetting your password doesn&apos;t touch anything you&apos;ve
           written. Your entries aren&apos;t locked with it.

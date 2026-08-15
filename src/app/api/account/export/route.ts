@@ -15,7 +15,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(payload, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": 'attachment; filename="values-mirror-export.json"',
+      "Content-Disposition": 'attachment; filename="groundwork-export.json"',
     },
   });
 }
