@@ -57,6 +57,9 @@ export async function middleware(req: NextRequest) {
   if (!authed && DEV_AUTOLOGIN && !wantsRealAuth) {
     const url = req.nextUrl.clone();
     url.pathname = "/api/auth/dev-login";
+    // Carry the intended destination so auto-login lands where you were going
+    // rather than on a default page.
+    url.searchParams.set("next", pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

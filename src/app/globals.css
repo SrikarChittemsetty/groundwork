@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Values Mirror — design system
+   Groundwork — design system
 
    The product is a private, contemplative tool: an honest mirror, not a
    dashboard and not social media. The visual language follows from that —
@@ -1378,6 +1378,18 @@ select:focus {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+}
+
+/* An h1 carries a 40px top margin for page rhythm. Inside a claim-row that
+   margin is on the heading but not on the button beside it, so the control
+   floated detached above the title. The row keeps the spacing; the heading
+   gives it up. */
+.claim-row:has(h1) {
+  margin-top: 40px;
+}
+
+.claim-row h1 {
+  margin-top: 0;
 }
 
 .claim-row > :first-child {

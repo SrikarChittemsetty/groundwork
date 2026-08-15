@@ -72,6 +72,19 @@ export async function GET(req: Request) {
 
   await createSession(user.id);
 
-  const url = new URL("/values", req.url);
-  return NextResponse.redirect(url);
+  // Go where the request was actually headed. The middleware forwards the
+  // original path as `next`; without it every auto-login landed on /values,
+  // so following a link to a specific position while signed out silently took
+  // you somewhere else.
+  //
+  // Only same-origin relative paths are honoured. This is dev-only code, but
+  // an unvalidated redirect target is an open redirect regardless of who it
+  // was written for, and "//evil.example" is a URL a lot of naive checks miss.
+  const requested = new URL(req.url).searchParams.get("next");
+  const safe =
+    requested && requested.startsWith("/") && !requested.startsWith("//")
+      ? requested
+      : "/values";
+
+  return NextResponse.redirect(new URL(safe, req.url));
 }
