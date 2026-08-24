@@ -159,6 +159,10 @@ export default function ExamplePage() {
         <Link href="/privacy">
           <button className="ghost">How your data is handled</button>
         </Link>
+        <span className="spacer" />
+        <Link href="/login">
+          <button className="ghost">Sign in</button>
+        </Link>
       </div>
 
       <hr />
