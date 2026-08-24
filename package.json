@@ -10,7 +10,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:push": "prisma db push",
+    "db:push": "node scripts/db-push.mjs",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "smoke": "node scripts/smoke.mjs",
