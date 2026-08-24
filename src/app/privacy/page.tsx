@@ -146,7 +146,13 @@ export default function PrivacyPage() {
 
       <hr />
       <p className="footnote">
-        <Link href="/values">Back to the app</Link>
+        {/* "Back to the app" alone breaks for a signed-out reader, who gets
+            bounced to the sign-in form. The example is public, so it works
+            whichever way someone arrived here. */}
+        <Link href="/">Back to Groundwork</Link> ·{" "}
+        <Link href="https://github.com/SrikarChittemsetty/groundwork">
+          Source on GitHub
+        </Link>
       </p>
     </main>
   );
