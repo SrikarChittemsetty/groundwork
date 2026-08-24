@@ -104,20 +104,38 @@ Work BACKWARD: start from what they actually did, and trace back to which of the
 // Tolerant of the model's formatting drift; strict about the citation itself.
 // A step whose citation can't be read is treated as uncited, which is the
 // safer failure: it gets flagged as ungrounded rather than silently accepted.
+//
+// "Tolerant" has to be earned rather than asserted. The first version of this
+// required a literal "-" at the start of the line, which every test fixture
+// happened to use — so the suite passed while three formats a model genuinely
+// produces (numbered lists, "*" bullets, en-dash bullets) parsed to NOTHING
+// and rendered a blank page. Bold around the citation lost the citation
+// entirely and silently marked a grounded step as the model's own import,
+// which is the exact misattribution this module exists to prevent.
+//
+// So the bullet may be any of - * • – —, or "1." / "1)" numbering, and
+// emphasis around the citation is stripped before it is read.
+const BULLET = /^(?:[-*\u2022\u2013\u2014]|\d+[.)])\s*/;
+
 export function parseSteps(text: string, record: RecordItem[]): Step[] {
   const valid = new Set(record.map((r) => r.tag.toUpperCase()));
   const steps: Step[] = [];
 
   for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    if (!line.startsWith("-")) continue;
+    let line = raw.trim();
+    if (!BULLET.test(line)) continue;
+    line = line.replace(BULLET, "");
 
-    const m = /^-\s*\[([^\]]*)\]\s*(.+)$/.exec(line);
+    // Markdown emphasis around the citation, e.g. "**[A1]** claim". Stripped
+    // only at the front, so emphasis inside the claim itself is left alone.
+    line = line.replace(/^(\*\*|__|\*|_)+\s*/, "");
+
+    const m = /^\[([^\]]*)\]\s*(?:\*\*|__|\*|_)*\s*(?:[-\u2013\u2014:]\s*)?(.+)$/.exec(line);
     if (!m) {
       // A step line without a citation block is still a claim the model made.
       // Keep it, marked ungrounded, rather than dropping it — hiding it would
       // be the same failure this whole module exists to prevent.
-      const claim = line.replace(/^-\s*/, "").trim();
+      const claim = line.trim();
       if (claim) steps.push({ cites: [], claim });
       continue;
     }
