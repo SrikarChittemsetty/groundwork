@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDateTime, renderReflectionHtml } from "@/lib/format";
+import Thinking from "@/components/Thinking";
 
 type Consultation = {
   id: string;
@@ -87,6 +88,8 @@ export default function AskClient() {
           </span>
         </div>
       </form>
+
+      {busy && <Thinking what="Reading your record" />}
 
       <h2>Past questions</h2>
       {loading ? (

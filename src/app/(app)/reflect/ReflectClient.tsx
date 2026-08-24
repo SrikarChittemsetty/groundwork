@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDateTime, renderReflectionHtml } from "@/lib/format";
+import Thinking from "@/components/Thinking";
 
 type Reflection = {
   id: string;
@@ -205,6 +206,8 @@ export default function ReflectClient({ aiEnabled }: { aiEnabled: boolean }) {
           )}
         </div>
       </form>
+
+      {busy && <Thinking what="Reading your record" />}
 
       <h2>Reflections</h2>
       {loading ? (

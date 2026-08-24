@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Thinking from "@/components/Thinking";
 
 type Step = { cites: string[]; claim: string };
 type RecordItem = { tag: string; kind: string; text: string };
@@ -105,6 +106,8 @@ export default function ReasonClient() {
           </button>
         </div>
       </form>
+
+      {busy && <Thinking what="Working through your record" />}
 
       {steps && (
         <>
