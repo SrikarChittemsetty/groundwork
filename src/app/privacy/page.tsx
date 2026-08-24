@@ -89,15 +89,22 @@ export default function PrivacyPage() {
           stolen database, not against the operator.
         </p>
         {ai ? (
-          <p>
-            <strong>The AI features send your data to Anthropic.</strong> When
-            you press &quot;Or have AI draft one&quot; or &quot;Reason it
-            through,&quot; your stated values and logged decisions are sent to
-            Anthropic&apos;s API to produce the response. Those two buttons are
-            the only things that transmit anything. Everything else — writing
-            values, logging decisions, the timeline, patterns, and reflections
-            you write yourself — never leaves this server.
-          </p>
+          <>
+            <p>
+              <strong>The AI features send your data to Anthropic.</strong>
+              There are three, and they are the only things here that
+              transmit anything: &quot;Or have AI draft one&quot; on Reflect,
+              the Reason page, and the Ask page. Each sends the relevant part
+              of your record — your axioms, positions, values, and logged
+              decisions — to Anthropic&apos;s API to produce its response.
+            </p>
+            <p>
+              Everything else stays here: writing values, taking a position
+              apart, reaching an axiom, logging decisions, the timeline, the
+              patterns (which are arithmetic, not inference), sharing, and any
+              reflection you write yourself. None of that leaves this server.
+            </p>
+          </>
         ) : (
           <p>
             <strong>Nothing here is sent anywhere.</strong> The AI features are

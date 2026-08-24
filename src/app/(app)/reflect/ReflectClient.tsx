@@ -112,8 +112,18 @@ export default function ReflectClient({ aiEnabled }: { aiEnabled: boolean }) {
     <>
       <h1>Reflect</h1>
       <p className="subtitle">
-        Sit with your own record and write down what you notice. Nothing here
-        leaves this machine, and nothing is required of you but honesty.
+        Sit with your own record and write down what you notice. Nothing is
+        required of you but honesty.
+        {aiEnabled ? (
+          <>
+            {" "}
+            What you write stays on this machine. The one exception is the
+            button below, which sends your entries to Anthropic to draft
+            something for you.
+          </>
+        ) : (
+          <> Nothing here leaves this machine.</>
+        )}
       </p>
 
       <form onSubmit={saveNote} className="card-form">
