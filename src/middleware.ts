@@ -40,7 +40,13 @@ async function isAuthed(req: NextRequest): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const authed = await isAuthed(req);
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // The root is public but must be matched EXACTLY. PUBLIC_PATHS is compared
+  // with startsWith, so putting "/" in that list would make every path in the
+  // app public — every path starts with "/". It gets its own check instead,
+  // and the page component decides where to send you: the interrogation if
+  // you're signed in, the worked example if you aren't.
+  const isPublic =
+    pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   // Pages that only make sense when signed OUT — an authenticated user landing
   // here gets sent into the app. /privacy is public but not in this set: it
   // stays readable whether or not you're signed in.
