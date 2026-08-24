@@ -66,6 +66,9 @@ export default function SignupPage() {
           </div>
         </form>
         <p className="footnote" style={{ marginTop: 20 }}>
+          Not sure what this is? <Link href="/example">See a worked example</Link>
+        </p>
+        <p className="footnote">
           Already have an account? <Link href="/login">Sign in</Link>
         </p>
         <p className="footnote">

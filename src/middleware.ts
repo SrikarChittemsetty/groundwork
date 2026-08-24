@@ -11,6 +11,7 @@ const COOKIE_NAME = "vm_session";
 // Readable without an account — you should be able to see how your data would
 // be handled BEFORE handing any over.
 const PUBLIC_PATHS = [
+  "/example",
   "/login",
   "/signup",
   "/privacy",

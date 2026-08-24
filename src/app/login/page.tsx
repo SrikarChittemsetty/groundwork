@@ -34,7 +34,9 @@ export default function LoginPage() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="brand">Groundwork</div>
-        <p className="subtitle">An honest, private mirror for your own values.</p>
+        <p className="subtitle">
+          A Socratic journal for reasoning from your own axioms.
+        </p>
         <form onSubmit={onSubmit}>
           <label htmlFor="email">Email</label>
           <input
@@ -62,6 +64,10 @@ export default function LoginPage() {
           </div>
         </form>
         <p className="footnote" style={{ marginTop: 20 }}>
+          New here? <Link href="/example">See a worked example</Link> — no
+          account needed.
+        </p>
+        <p className="footnote">
           No account? <Link href="/signup">Create one</Link>
         </p>
         <p className="footnote">

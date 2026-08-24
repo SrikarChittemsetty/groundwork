@@ -80,6 +80,7 @@ async function routes(cookie) {
     { path: "/reason", needs: null },
     { path: "/ask", needs: null },
     { path: "/privacy", needs: null },
+    { path: "/example", needs: null },
     { path: "/login?real=1", needs: null },
     { path: "/signup?real=1", needs: null },
     { path: "/forgot?real=1", needs: null },
