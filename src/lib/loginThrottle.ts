@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { positiveIntFromEnv } from "@/lib/envNumber";
 
 // Brute-force protection for sign-in. Without it, a password is only as strong
 // as an attacker's patience — and the data behind it is somebody's private
@@ -14,8 +15,8 @@ import { prisma } from "@/lib/db";
 // botnet spread across thousands of addresses. That's the accepted tradeoff at
 // this scale — the honest mitigation for that case is a strong password.
 
-const MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS ?? 10);
-const WINDOW_MINUTES = Number(process.env.LOGIN_WINDOW_MINUTES ?? 15);
+const MAX_ATTEMPTS = positiveIntFromEnv("LOGIN_MAX_ATTEMPTS", 10);
+const WINDOW_MINUTES = positiveIntFromEnv("LOGIN_WINDOW_MINUTES", 15);
 
 export type ThrottleResult =
   | { blocked: false }
